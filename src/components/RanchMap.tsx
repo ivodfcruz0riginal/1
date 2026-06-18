@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useGameState } from '../store/gameState';
 import type { BuildingKey, BuildingNotification, LocationId } from '../store/gameState';
+import { useDayCycle } from '../hooks/useDayCycle';
+import type { DayPeriod, WeatherType } from '../hooks/useDayCycle';
 
 // ── Coming Soon overlay ───────────────────────────────────────────────────────
 
@@ -65,18 +67,33 @@ const BuildingTooltip: React.FC<TooltipProps> = ({ name, hint, visible }) => (
       <div className="absolute -top-0.5 -right-0.5 w-2 h-2 border-t border-r border-gold/50" />
       <p className="font-display text-xs text-gold tracking-widest uppercase">{name}</p>
       <p className="text-ivory/50 text-[10px] font-body mt-0.5">{hint}</p>
-      {/* Arrow */}
       <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-leather-900/98 border-b border-r border-gold/50 rotate-45" />
     </div>
   </div>
 );
 
-// ── Bull silhouette ───────────────────────────────────────────────────────────
+// ── Animated bull silhouette ──────────────────────────────────────────────────
 
-const BullSilhouette: React.FC<{ size?: 'sm' | 'md' | 'lg'; style?: React.CSSProperties }> = ({ size = 'md', style }) => {
+interface BullProps {
+  size?: 'sm' | 'md' | 'lg';
+  style?: React.CSSProperties;
+  anim?: 'wander' | 'wander-rev' | 'graze' | 'drink' | 'still';
+  delay?: number;
+}
+
+const BullSilhouette: React.FC<BullProps> = ({ size = 'md', style, anim = 'still', delay = 0 }) => {
   const w = size === 'sm' ? 'w-3 h-2' : size === 'md' ? 'w-5 h-3' : 'w-6 h-4';
+  const animClass =
+    anim === 'wander'     ? 'animate-wander' :
+    anim === 'wander-rev' ? 'animate-wander-rev' :
+    anim === 'graze'      ? 'animate-graze' :
+    anim === 'drink'      ? 'animate-drink' : '';
+
   return (
-    <div className="relative pointer-events-none" style={style}>
+    <div
+      className={`relative pointer-events-none ${animClass}`}
+      style={{ ...style, animationDelay: delay ? `${delay}s` : undefined }}
+    >
       <div className={`${w} bg-leather-900/70 rounded-full relative`}>
         <div className="absolute -top-1 left-1 w-2 h-2 bg-leather-900/70 rounded-t-full" />
         <div className="absolute -bottom-1 left-1 w-0.5 h-1 bg-leather-900/70" />
@@ -89,35 +106,68 @@ const BullSilhouette: React.FC<{ size?: 'sm' | 'md' | 'lg'; style?: React.CSSPro
   );
 };
 
-// ── Manuel — Maioral character ────────────────────────────────────────────────
+// ── Bird silhouette ───────────────────────────────────────────────────────────
 
-interface ManuelFigureProps {
-  hasDialogue: boolean;
+interface BirdProps {
+  style?: React.CSSProperties;
+  delay?: number;
 }
 
-const ManuelFigure: React.FC<ManuelFigureProps> = ({ hasDialogue }) => (
+const Bird: React.FC<BirdProps> = ({ style, delay = 0 }) => (
+  <div
+    className="absolute pointer-events-none animate-bird-fly"
+    style={{ ...style, animationDelay: `${delay}s` }}
+  >
+    <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
+      <path d="M9,5 Q6,1 1,3" stroke="rgba(100,80,60,0.6)" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+      <path d="M9,5 Q12,1 17,3" stroke="rgba(100,80,60,0.6)" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+    </svg>
+  </div>
+);
+
+// ── Campino figure ────────────────────────────────────────────────────────────
+
+interface CampinoProps {
+  style?: React.CSSProperties;
+  activity: 'riding' | 'fence' | 'watching';
+}
+
+const CampinoFigure: React.FC<CampinoProps> = ({ style, activity }) => (
+  <div className="absolute pointer-events-none select-none" style={style}>
+    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-1 bg-black/20 rounded-full blur-sm" />
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-1 bg-leather-800/80 rounded-full" />
+    <div className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-4 h-3 bg-leather-700/80 rounded-t-sm" />
+    <div className="w-4 h-4 bg-amber-900/65 rounded-full mx-auto mt-0.5" />
+    <div
+      className={`w-4 h-7 bg-leather-600/75 rounded-t mx-auto mt-0.5 ${activity === 'fence' ? 'animate-campino-work' : ''}`}
+      style={{ transformOrigin: 'top center' }}
+    />
+    <div className="flex gap-0.5 justify-center">
+      <div className="w-1.5 h-4 bg-leather-800/70 rounded-b" />
+      <div className="w-1.5 h-4 bg-leather-800/70 rounded-b" />
+    </div>
+    {activity === 'fence' && (
+      <div className="absolute top-10 -right-3 w-1 h-5 bg-leather-600/50 rounded origin-bottom animate-campino-work" />
+    )}
+  </div>
+);
+
+// ── Manuel — Maioral character ────────────────────────────────────────────────
+
+const ManuelFigure: React.FC<{ hasDialogue: boolean }> = ({ hasDialogue }) => (
   <div className="absolute pointer-events-none select-none" style={{ top: '98px', right: '118px', zIndex: 15 }}>
-    {/* Ground shadow */}
     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-7 h-1.5 bg-black/25 rounded-full blur-sm" />
-    {/* Campino hat brim */}
     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-1.5 bg-leather-900/90 rounded-full" />
-    {/* Hat crown */}
     <div className="absolute top-[-6px] left-1/2 -translate-x-1/2 w-5 h-4 bg-leather-800/90 rounded-t-sm" />
-    {/* Head */}
     <div className="w-5 h-5 bg-amber-800/75 rounded-full mx-auto mt-1" />
-    {/* Body / jacket */}
     <div className="w-6 h-9 bg-leather-700/85 rounded-t mx-auto mt-0.5 relative">
-      {/* Jacket lapels */}
       <div className="absolute top-1 left-1 w-1.5 h-4 bg-leather-600/60 rounded-b-full" />
       <div className="absolute top-1 right-1 w-1.5 h-4 bg-leather-600/60 rounded-b-full" />
     </div>
-    {/* Legs */}
     <div className="flex gap-0.5 justify-center">
       <div className="w-2 h-5 bg-leather-800/80 rounded-b" />
       <div className="w-2 h-5 bg-leather-800/80 rounded-b" />
     </div>
-
-    {/* Dialogue pending indicator */}
     {hasDialogue && (
       <div className="absolute -top-7 left-1/2 -translate-x-1/2 animate-bounce">
         <div className="relative bg-gold/90 text-leather-900 rounded-full w-5 h-5 flex items-center justify-center shadow-lg shadow-gold/30">
@@ -129,12 +179,128 @@ const ManuelFigure: React.FC<ManuelFigureProps> = ({ hasDialogue }) => (
   </div>
 );
 
+// ── Smoke from chimney ────────────────────────────────────────────────────────
+
+const ChimneySmoke: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
+  <>
+    <div className="absolute w-3 h-4 rounded-full bg-ivory/12 animate-smoke-rise" style={{ ...style, animationDelay: '0s' }} />
+    <div className="absolute w-2 h-3 rounded-full bg-ivory/8 animate-smoke-rise" style={{ ...style, top: (style?.top as number ?? 0) - 6, animationDelay: '1.4s' }} />
+    <div className="absolute w-2 h-3 rounded-full bg-ivory/6 animate-smoke-rise" style={{ ...style, top: (style?.top as number ?? 0) - 3, animationDelay: '2.8s' }} />
+  </>
+);
+
+// ── Weather overlays ──────────────────────────────────────────────────────────
+
+const RainOverlay: React.FC = () => (
+  <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 5 }}>
+    {Array.from({ length: 30 }).map((_, i) => (
+      <div
+        key={i}
+        className="absolute w-px bg-gradient-to-b from-transparent via-sky-300/25 to-transparent animate-rain-fall"
+        style={{
+          left: `${(i * 3.4) % 100}%`,
+          top: '-20%',
+          height: '30%',
+          animationDelay: `${(i * 0.04) % 1.2}s`,
+          animationDuration: `${0.9 + (i % 5) * 0.08}s`,
+        }}
+      />
+    ))}
+    <div className="absolute inset-0 bg-slate-900/15" />
+  </div>
+);
+
+const FogOverlay: React.FC = () => (
+  <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 5 }}>
+    <div className="absolute inset-0 animate-fog-drift" style={{ background: 'radial-gradient(ellipse 120% 40% at 50% 70%, rgba(200,190,170,0.28) 0%, transparent 70%)' }} />
+    <div className="absolute inset-0 animate-fog-drift" style={{ background: 'radial-gradient(ellipse 100% 30% at 30% 60%, rgba(190,180,165,0.20) 0%, transparent 65%)', animationDelay: '6s' }} />
+  </div>
+);
+
+const WindOverlay: React.FC = () => (
+  <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 5 }}>
+    {Array.from({ length: 6 }).map((_, i) => (
+      <div
+        key={i}
+        className="absolute h-px bg-gradient-to-r from-transparent via-ivory/8 to-transparent"
+        style={{
+          top: `${20 + i * 12}%`,
+          left: '-10%',
+          width: '120%',
+          animationName: 'fog-drift',
+          animationDuration: `${3 + i * 0.4}s`,
+          animationTimingFunction: 'ease-in-out',
+          animationIterationCount: 'infinite',
+          animationDelay: `${i * 0.5}s`,
+        }}
+      />
+    ))}
+  </div>
+);
+
+// ── Ambient event label ───────────────────────────────────────────────────────
+
+interface AmbientLabelProps {
+  text: string;
+  style?: React.CSSProperties;
+}
+
+const AmbientLabel: React.FC<AmbientLabelProps> = ({ text, style }) => (
+  <div
+    className="absolute pointer-events-none"
+    style={style}
+  >
+    <div className="bg-leather-900/75 border border-leather-600/40 rounded px-2 py-0.5 backdrop-blur-sm">
+      <span className="text-ivory/35 text-[9px] font-body uppercase tracking-wider whitespace-nowrap">{text}</span>
+    </div>
+  </div>
+);
+
+// ── Truck ─────────────────────────────────────────────────────────────────────
+
+const ParkedTruck: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
+  <div className="absolute pointer-events-none" style={style}>
+    <div className="relative w-16 h-7">
+      <div className="absolute left-0 bottom-0 w-10 h-5 bg-leather-700/60 border border-leather-600/40 rounded-sm" />
+      <div className="absolute right-0 bottom-0 w-7 h-6 bg-leather-800/70 border border-leather-600/40 rounded-r-sm" />
+      <div className="absolute bottom-0 left-2 w-4 h-1.5 bg-black/40 rounded-full" />
+      <div className="absolute bottom-0 right-1 w-4 h-1.5 bg-black/40 rounded-full" />
+      <div className="absolute right-1 top-1 w-4 h-3 bg-amber-900/20 border border-leather-600/30 rounded-sm" />
+    </div>
+  </div>
+);
+
+// ── Sky tint per period ───────────────────────────────────────────────────────
+
+function getSkyTint(period: DayPeriod, weather: WeatherType): string {
+  if (weather === 'Rain')   return 'from-slate-800/80 via-slate-700/50 to-leather-900';
+  if (weather === 'Fog')    return 'from-stone-600/55 via-stone-500/25 to-leather-900';
+  if (weather === 'Cloudy') return 'from-slate-600/45 via-amber-800/15 to-leather-900';
+  switch (period) {
+    case 'Morning':   return 'from-amber-400/50 via-orange-500/25 to-leather-900';
+    case 'Afternoon': return 'from-sky-600/35 via-amber-700/15 to-leather-900';
+    case 'Evening':   return 'from-orange-700/65 via-amber-600/40 to-leather-900';
+    case 'Night':     return 'from-slate-900/90 via-slate-800/30 to-leather-900';
+  }
+}
+
+function getGroundTint(period: DayPeriod): string {
+  switch (period) {
+    case 'Morning':   return 'from-amber-900/25 via-yellow-900/15 to-leather-900';
+    case 'Afternoon': return 'from-amber-900/30 via-yellow-900/20 to-leather-900';
+    case 'Evening':   return 'from-orange-900/40 via-amber-900/20 to-leather-900';
+    case 'Night':     return 'from-leather-900/80 via-slate-900/20 to-leather-900';
+  }
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 const RanchMap: React.FC = () => {
   const [hovered, setHovered] = useState<string | null>(null);
   const { state, dismissNotification, setActiveLocation } = useGameState();
   const { notifications } = state;
+  const dayCycle = useDayCycle();
+  const { period, weather } = dayCycle;
 
   const hover = (key: string) => () => setHovered(key);
   const unhover = () => setHovered(null);
@@ -144,23 +310,63 @@ const RanchMap: React.FC = () => {
     setActiveLocation(key as LocationId);
   };
 
+  // Deterministic ambient event selection based on period
+  const ambientEvents = useMemo(() => {
+    const events = {
+      showFenceRepair:  period === 'Morning' || period === 'Afternoon',
+      showDrinkingBull: period === 'Afternoon' || period === 'Evening',
+      showTruck:        period === 'Morning' || period === 'Afternoon',
+      showSmoke:        period === 'Evening' || period === 'Night',
+      showVet:          period === 'Afternoon',
+      showCampino2:     period !== 'Night',
+    };
+    return events;
+  }, [period]);
+
+  const skyTint = getSkyTint(period, weather);
+  const groundTint = getGroundTint(period);
+  const isNight = period === 'Night';
+  const sunVisible = weather !== 'Rain' && weather !== 'Fog' && !isNight;
+
   return (
     <div className="relative h-full overflow-hidden">
 
       {/* ── SKY ── */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-700/60 via-amber-600/40 via-60% to-leather-900" />
-        <div className="absolute inset-0 bg-gradient-to-br from-red-800/20 via-transparent to-purple-900/10" />
+      <div className="absolute inset-0 transition-all duration-[3000ms]">
+        <div className={`absolute inset-0 bg-gradient-to-b ${skyTint} transition-all duration-[3000ms]`} />
+        {!isNight && (
+          <div className="absolute inset-0 bg-gradient-to-br from-red-800/15 via-transparent to-purple-900/8" />
+        )}
+        {isNight && (
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-transparent to-transparent" />
+        )}
       </div>
 
-      {/* Sun */}
-      <div className="absolute top-12 left-1/4 pointer-events-none">
-        <div className="w-32 h-32 bg-gradient-radial from-amber-400/50 via-orange-500/30 to-transparent rounded-full blur-xl animate-pulse" />
-        <div className="absolute inset-0 w-32 h-32 bg-gradient-radial from-yellow-300/70 to-transparent rounded-full blur-md" />
-        {[...Array(8)].map((_, i) => (
-          <div key={i} className="absolute top-1/2 left-1/2 w-40 h-0.5 bg-gradient-to-r from-amber-500/30 to-transparent origin-left" style={{ transform: `rotate(${i * 45}deg)` }} />
-        ))}
-      </div>
+      {/* Stars (night only) */}
+      {isNight && (
+        <div className="absolute inset-0 pointer-events-none">
+          {Array.from({ length: 40 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-0.5 h-0.5 bg-ivory/40 rounded-full animate-pulse"
+              style={{ left: `${(i * 7.3 + 2) % 95}%`, top: `${(i * 5.7 + 1) % 35}%`, animationDelay: `${i * 0.15}s`, animationDuration: '3s' }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Sun / Moon */}
+      {sunVisible && (
+        <div className={`absolute pointer-events-none transition-all duration-[3000ms] ${period === 'Morning' ? 'top-16 left-1/5' : period === 'Afternoon' ? 'top-8 left-1/2 -translate-x-1/2' : 'top-12 left-1/4'}`}>
+          <div className="w-24 h-24 bg-gradient-radial from-amber-400/55 via-orange-500/25 to-transparent rounded-full blur-xl animate-pulse" />
+          <div className="absolute inset-0 w-24 h-24 bg-gradient-radial from-yellow-300/65 to-transparent rounded-full blur-md" />
+        </div>
+      )}
+      {isNight && (
+        <div className="absolute top-10 left-1/4 pointer-events-none">
+          <div className="w-10 h-10 bg-gradient-radial from-ivory/30 via-ivory/10 to-transparent rounded-full blur-sm" />
+        </div>
+      )}
 
       {/* Mountains */}
       <svg className="absolute inset-x-0 top-0 h-48 w-full pointer-events-none" viewBox="0 0 1200 200" preserveAspectRatio="none">
@@ -179,8 +385,8 @@ const RanchMap: React.FC = () => {
       </svg>
 
       {/* Ground */}
-      <div className="absolute bottom-0 inset-x-0 h-2/3 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-900/30 via-yellow-900/20 to-leather-900" />
+      <div className="absolute bottom-0 inset-x-0 h-2/3 pointer-events-none transition-all duration-[3000ms]">
+        <div className={`absolute inset-0 bg-gradient-to-b ${groundTint} transition-all duration-[3000ms]`} />
         <div className="absolute inset-0 bg-gradient-to-r from-leather-900/50 via-transparent to-leather-900/40" />
         <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 100 100" preserveAspectRatio="none">
           {[...Array(20)].map((_, i) => (
@@ -191,12 +397,26 @@ const RanchMap: React.FC = () => {
 
       {/* Cork oaks */}
       {[{ top: '8%', left: '15%' }, { top: '75%', left: '30%' }, { top: '20%', right: '40%' }, { top: '60%', right: '55%' }].map((pos, i) => (
-        <div key={i} className="absolute opacity-40 pointer-events-none" style={{ ...pos }}>
+        <div key={i} className="absolute pointer-events-none" style={{ ...pos, opacity: isNight ? 0.2 : 0.4 }}>
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-6 bg-leather-800/80 rounded-t" />
           <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-6 bg-emerald-950/60 rounded-t-full" />
           <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-5 h-4 bg-emerald-950/50 rounded-full" />
         </div>
       ))}
+
+      {/* Birds */}
+      {!isNight && weather !== 'Rain' && (
+        <>
+          <Bird style={{ top: '18%', left: '35%' }} delay={0} />
+          <Bird style={{ top: '22%', left: '20%' }} delay={3.5} />
+          <Bird style={{ top: '15%', left: '55%' }} delay={7} />
+        </>
+      )}
+
+      {/* Weather overlays */}
+      {weather === 'Rain'  && <RainOverlay />}
+      {weather === 'Fog'   && <FogOverlay />}
+      {weather === 'Wind'  && <WindOverlay />}
 
       {/* ── ESTATE LAYOUT ── */}
       <div className="absolute inset-0 flex items-center justify-center">
@@ -234,7 +454,6 @@ const RanchMap: React.FC = () => {
           >
             <div className={`absolute inset-0 rounded border-2 overflow-hidden transition-all duration-300 ${hovered === 'norte' ? 'border-gold/60 shadow-lg shadow-gold/15' : 'border-leather-600/50'}`}>
               <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/40 via-yellow-900/20 to-amber-950/30" />
-              {/* Hover tint */}
               <div className={`absolute inset-0 bg-gold/5 transition-opacity duration-300 ${hovered === 'norte' ? 'opacity-100' : 'opacity-0'}`} />
               <div className="absolute inset-0 opacity-30">
                 {[...Array(25)].map((_, i) => (
@@ -242,7 +461,6 @@ const RanchMap: React.FC = () => {
                 ))}
               </div>
               <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-emerald-950/30 to-transparent" />
-              {/* Tooltip */}
               <div className={`absolute top-2 left-1/2 -translate-x-1/2 transition-all duration-200 ${hovered === 'norte' ? 'opacity-100' : 'opacity-0'}`}>
                 <div className="bg-leather-900/95 border border-gold/50 rounded px-3 py-1.5 shadow-lg whitespace-nowrap">
                   <p className="font-display text-xs text-gold tracking-widest uppercase">Cercado Norte</p>
@@ -250,21 +468,32 @@ const RanchMap: React.FC = () => {
                 </div>
               </div>
             </div>
-            {/* Animals */}
-            <BullSilhouette size="lg" style={{ position: 'absolute', bottom: 20, left: 30 }} />
-            <BullSilhouette size="md" style={{ position: 'absolute', bottom: 35, left: 70, opacity: 0.8 }} />
-            <BullSilhouette size="sm" style={{ position: 'absolute', bottom: 25, left: 110, opacity: 0.6 }} />
-            <BullSilhouette size="md" style={{ position: 'absolute', bottom: 50, left: 90, opacity: 0.5 }} />
-            <BullSilhouette size="sm" style={{ position: 'absolute', bottom: 40, left: 150, opacity: 0.7 }} />
-            {/* Label */}
+
+            {/* Animated bulls — Cercado Norte */}
+            <BullSilhouette size="lg" anim="wander"     delay={0}   style={{ position: 'absolute', bottom: 20, left: 30 }} />
+            <BullSilhouette size="md" anim="graze"      delay={1.5} style={{ position: 'absolute', bottom: 35, left: 70, opacity: 0.8 }} />
+            <BullSilhouette size="sm" anim="wander-rev" delay={3}   style={{ position: 'absolute', bottom: 25, left: 110, opacity: 0.6 }} />
+            <BullSilhouette size="md" anim="still"      delay={0}   style={{ position: 'absolute', bottom: 50, left: 90, opacity: 0.5 }} />
+            <BullSilhouette size="sm" anim="graze"      delay={2}   style={{ position: 'absolute', bottom: 40, left: 150, opacity: 0.7 }} />
+            {ambientEvents.showDrinkingBull && (
+              <BullSilhouette size="md" anim="drink" delay={0.5} style={{ position: 'absolute', bottom: 15, left: 190, opacity: 0.75 }} />
+            )}
+
             <div className={`absolute bottom-3 left-3 transition-opacity duration-200 ${hovered === 'norte' ? 'opacity-0' : 'opacity-100'}`}>
               <span className="text-ivory/40 text-[10px] font-body uppercase tracking-widest">Cercado Norte</span>
             </div>
-            {/* Notification */}
             {notifications.cercado_norte && (
               <div className="absolute top-2 right-2 z-10">
                 <NotificationBadge n={notifications.cercado_norte} />
               </div>
+            )}
+
+            {/* Fence repair campino */}
+            {ambientEvents.showFenceRepair && (
+              <>
+                <CampinoFigure activity="fence" style={{ bottom: 8, right: 14, zIndex: 12 }} />
+                <AmbientLabel text="A reparar vedação" style={{ bottom: -16, right: 0, zIndex: 13 }} />
+              </>
             )}
           </div>
 
@@ -283,7 +512,6 @@ const RanchMap: React.FC = () => {
                   <div key={i} className="absolute w-1 h-3 bg-emerald-800/40 rounded-t" style={{ left: `${8 + (i * 4.5) % 88}%`, top: `${5 + Math.cos(i * 0.6) * 35}%`, transform: `rotate(${5 + (i % 4) * 5}deg)` }} />
                 ))}
               </div>
-              {/* Tooltip */}
               <div className={`absolute top-2 left-1/2 -translate-x-1/2 transition-all duration-200 ${hovered === 'sul' ? 'opacity-100' : 'opacity-0'}`}>
                 <div className="bg-leather-900/95 border border-gold/50 rounded px-3 py-1.5 shadow-lg whitespace-nowrap">
                   <p className="font-display text-xs text-gold tracking-widest uppercase">Cercado Sul</p>
@@ -291,10 +519,13 @@ const RanchMap: React.FC = () => {
                 </div>
               </div>
             </div>
-            <BullSilhouette size="md" style={{ position: 'absolute', bottom: 25, left: 40 }} />
-            <BullSilhouette size="lg" style={{ position: 'absolute', bottom: 40, left: 80, opacity: 0.9 }} />
-            <BullSilhouette size="sm" style={{ position: 'absolute', bottom: 30, left: 130, opacity: 0.7 }} />
-            <BullSilhouette size="md" style={{ position: 'absolute', bottom: 55, left: 100, opacity: 0.6 }} />
+
+            {/* Animated bulls — Cercado Sul */}
+            <BullSilhouette size="md" anim="wander"     delay={1}   style={{ position: 'absolute', bottom: 25, left: 40 }} />
+            <BullSilhouette size="lg" anim="graze"      delay={0}   style={{ position: 'absolute', bottom: 40, left: 80, opacity: 0.9 }} />
+            <BullSilhouette size="sm" anim="wander-rev" delay={4}   style={{ position: 'absolute', bottom: 30, left: 130, opacity: 0.7 }} />
+            <BullSilhouette size="md" anim="graze"      delay={2.5} style={{ position: 'absolute', bottom: 55, left: 100, opacity: 0.6 }} />
+
             <div className={`absolute bottom-3 left-3 transition-opacity duration-200 ${hovered === 'sul' ? 'opacity-0' : 'opacity-100'}`}>
               <span className="text-ivory/40 text-[10px] font-body uppercase tracking-widest">Cercado Sul</span>
             </div>
@@ -302,6 +533,14 @@ const RanchMap: React.FC = () => {
               <div className="absolute top-2 right-2 z-10">
                 <NotificationBadge n={notifications.cercado_sul} />
               </div>
+            )}
+
+            {/* Vet visiting in afternoon */}
+            {ambientEvents.showVet && (
+              <>
+                <CampinoFigure activity="watching" style={{ bottom: 8, left: 180, zIndex: 12 }} />
+                <AmbientLabel text="Veterinário em visita" style={{ bottom: -16, left: 155, zIndex: 13 }} />
+              </>
             )}
           </div>
 
@@ -328,7 +567,6 @@ const RanchMap: React.FC = () => {
               <div className="w-2 h-2 bg-gold/30 rounded-full" />
             </div>
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-4 bg-leather-800/80 border-2 border-leather-600/40 rounded-t" />
-            {/* Tooltip */}
             <BuildingTooltip name="Tentadero" hint="Arena de provas" visible={hovered === 'tentadero'} />
           </div>
 
@@ -337,25 +575,21 @@ const RanchMap: React.FC = () => {
             className="absolute top-6 right-20 w-28 h-20 cursor-pointer group"
             onMouseEnter={hover('escritorio')}
             onMouseLeave={unhover}
-            onClick={() => openLocation('escritorio')}            style={{ zIndex: 10 }}
+            onClick={() => openLocation('escritorio')}
+            style={{ zIndex: 10 }}
           >
             {notifications.escritorio && <NotificationBadge n={notifications.escritorio} />}
             <BuildingTooltip name="Escritório" hint="Centro de administração" visible={hovered === 'escritorio'} />
-            {/* Shadow */}
             <div className="absolute inset-0 bg-black/30 translate-y-2 translate-x-1 rounded pointer-events-none" />
-            {/* Structure */}
             <div className={`absolute inset-0 rounded shadow-lg border-2 transition-all duration-300 ${hovered === 'escritorio' ? 'bg-leather-700/95 border-gold/50 shadow-gold/20' : 'bg-leather-800/90 border-leather-600/60'}`}>
-              {/* Roof */}
               <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[60px] border-r-[60px] border-b-[32px] border-l-transparent border-r-transparent border-b-amber-900/80 pointer-events-none" />
               <div className={`absolute -top-8 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[60px] border-r-[60px] border-b-[28px] border-l-transparent border-r-transparent border-b-amber-800/60 pointer-events-none transition-opacity duration-300 ${hovered === 'escritorio' ? 'opacity-100' : 'opacity-40'}`} />
-              {/* Windows — glow when hovered */}
-              <div className={`absolute top-4 left-3 w-5 h-5 border rounded-sm transition-all duration-300 ${hovered === 'escritorio' ? 'bg-amber-400/40 border-amber-500/60' : 'bg-amber-500/20 border-leather-500/40'}`}>
+              <div className={`absolute top-4 left-3 w-5 h-5 border rounded-sm transition-all duration-300 ${isNight || hovered === 'escritorio' ? 'bg-amber-400/50 border-amber-500/70' : 'bg-amber-500/20 border-leather-500/40'}`}>
                 <div className="absolute inset-0.5 bg-amber-400/10" />
               </div>
-              <div className={`absolute top-4 right-3 w-5 h-5 border rounded-sm transition-all duration-300 ${hovered === 'escritorio' ? 'bg-amber-400/40 border-amber-500/60' : 'bg-amber-500/20 border-leather-500/40'}`}>
+              <div className={`absolute top-4 right-3 w-5 h-5 border rounded-sm transition-all duration-300 ${isNight || hovered === 'escritorio' ? 'bg-amber-400/50 border-amber-500/70' : 'bg-amber-500/20 border-leather-500/40'}`}>
                 <div className="absolute inset-0.5 bg-amber-400/10" />
               </div>
-              {/* Door */}
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-8 bg-leather-900/80 border-t-2 border-leather-500/30 rounded-t">
                 <div className="absolute top-3 right-1 w-1 h-1 bg-gold/40 rounded-full" />
               </div>
@@ -364,6 +598,14 @@ const RanchMap: React.FC = () => {
 
           {/* ── MANUEL — Maioral ── */}
           <ManuelFigure hasDialogue={!!state.pendingDialogue} />
+
+          {/* ── CAMPINO 2 — Watching near tentadero ── */}
+          {ambientEvents.showCampino2 && (
+            <CampinoFigure
+              activity="watching"
+              style={{ position: 'absolute', top: '72%', right: '30%', zIndex: 15 }}
+            />
+          )}
 
           {/* ── CASA PRINCIPAL ── */}
           <div
@@ -375,28 +617,26 @@ const RanchMap: React.FC = () => {
           >
             {notifications.casa && <NotificationBadge n={notifications.casa} />}
             <BuildingTooltip name="Casa Principal" hint="Residência da herdade" visible={hovered === 'casa'} />
-            {/* Shadow */}
             <div className="absolute inset-0 bg-black/30 translate-y-2 translate-x-1 rounded pointer-events-none" />
-            {/* Main structure — slightly larger, more ornate */}
             <div className={`absolute inset-0 rounded shadow-lg border-2 transition-all duration-300 ${hovered === 'casa' ? 'bg-leather-700/95 border-gold/40 shadow-gold/15' : 'bg-leather-800/80 border-leather-600/50'}`}>
-              {/* Larger roof */}
               <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[72px] border-r-[72px] border-b-[40px] border-l-transparent border-r-transparent border-b-amber-900/70 pointer-events-none" />
               <div className={`absolute -top-10 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[72px] border-r-[72px] border-b-[36px] border-l-transparent border-r-transparent border-b-amber-800/50 pointer-events-none transition-opacity duration-300 ${hovered === 'casa' ? 'opacity-100' : 'opacity-30'}`} />
               {/* Chimney */}
               <div className="absolute -top-14 right-5 w-4 h-8 bg-leather-700/70 border border-leather-600/40 rounded-t pointer-events-none" />
-              {/* Windows — 3 across */}
               {[3, 12, 21].map((left, i) => (
-                <div key={i} className={`absolute top-4 w-5 h-5 border rounded-sm transition-all duration-300 ${hovered === 'casa' ? 'bg-amber-400/30 border-amber-500/50' : 'bg-amber-500/15 border-leather-500/30'}`} style={{ left: `${left}px` }}>
+                <div key={i} className={`absolute top-4 w-5 h-5 border rounded-sm transition-all duration-300 ${isNight || hovered === 'casa' ? 'bg-amber-400/40 border-amber-500/60' : 'bg-amber-500/15 border-leather-500/30'}`} style={{ left: `${left}px` }}>
                   <div className="absolute inset-0.5 bg-amber-400/8" />
                 </div>
               ))}
-              {/* Door — arched */}
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-7 h-10 bg-leather-900/80 border-t-2 border-leather-500/30 rounded-t-full">
                 <div className="absolute top-4 right-1 w-1 h-1 bg-gold/40 rounded-full" />
               </div>
-              {/* Facade detail line */}
               <div className="absolute top-12 inset-x-2 h-px bg-leather-600/30" />
             </div>
+            {/* Chimney smoke */}
+            {ambientEvents.showSmoke && (
+              <ChimneySmoke style={{ top: -50, right: 16 }} />
+            )}
           </div>
 
           {/* ── CURRAIS ── */}
@@ -451,6 +691,14 @@ const RanchMap: React.FC = () => {
             </div>
           </div>
 
+          {/* Parked truck near embarque */}
+          {ambientEvents.showTruck && (
+            <>
+              <ParkedTruck style={{ bottom: '10%', right: '22%', zIndex: 11 }} />
+              <AmbientLabel text="Camião parado" style={{ bottom: 'calc(10% - 18px)', right: '22%', zIndex: 12 }} />
+            </>
+          )}
+
           {/* ── FLOATING ESTATE NAME ── */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
             <div className="relative bg-leather-900/90 border border-gold/30 rounded px-5 py-2 shadow-lg backdrop-blur-sm">
@@ -466,12 +714,19 @@ const RanchMap: React.FC = () => {
       </div>
 
       {/* Dust particles */}
-      {Array.from({ length: 15 }).map((_, i) => (
+      {!isNight && Array.from({ length: 15 }).map((_, i) => (
         <div key={i} className="absolute w-1 h-1 bg-amber-500/20 rounded-full animate-pulse pointer-events-none" style={{ left: `${5 + i * 7}%`, top: `${30 + Math.sin(i * 0.8) * 20}%`, animationDelay: `${i * 0.2}s`, animationDuration: '4s' }} />
       ))}
 
-      {/* Heat shimmer */}
-      <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-amber-600/5 to-transparent pointer-events-none" />
+      {/* Heat shimmer (afternoon/morning only) */}
+      {(period === 'Afternoon' || period === 'Morning') && weather === 'Sunny' && (
+        <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-amber-600/5 to-transparent pointer-events-none" />
+      )}
+
+      {/* Night darkness overlay */}
+      {isNight && (
+        <div className="absolute inset-0 bg-slate-950/35 pointer-events-none" />
+      )}
 
       {/* Vignette */}
       <div className="absolute inset-0 pointer-events-none">
