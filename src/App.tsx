@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import RanchMap from './components/RanchMap';
+import MaioralDialogue from './components/MaioralDialogue';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
 import EconomyScreen from './screens/EconomyScreen';
@@ -29,6 +30,7 @@ const HerdadePage: React.FC = () => (
     </div>
 
     <RanchMap />
+    <MaioralDialogue />
   </>
 );
 

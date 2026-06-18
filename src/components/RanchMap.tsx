@@ -90,6 +90,46 @@ const BullSilhouette: React.FC<{ size?: 'sm' | 'md' | 'lg'; style?: React.CSSPro
   );
 };
 
+// ── Manuel — Maioral character ────────────────────────────────────────────────
+
+interface ManuelFigureProps {
+  hasDialogue: boolean;
+}
+
+const ManuelFigure: React.FC<ManuelFigureProps> = ({ hasDialogue }) => (
+  <div className="absolute pointer-events-none select-none" style={{ top: '98px', right: '118px', zIndex: 15 }}>
+    {/* Ground shadow */}
+    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-7 h-1.5 bg-black/25 rounded-full blur-sm" />
+    {/* Campino hat brim */}
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-1.5 bg-leather-900/90 rounded-full" />
+    {/* Hat crown */}
+    <div className="absolute top-[-6px] left-1/2 -translate-x-1/2 w-5 h-4 bg-leather-800/90 rounded-t-sm" />
+    {/* Head */}
+    <div className="w-5 h-5 bg-amber-800/75 rounded-full mx-auto mt-1" />
+    {/* Body / jacket */}
+    <div className="w-6 h-9 bg-leather-700/85 rounded-t mx-auto mt-0.5 relative">
+      {/* Jacket lapels */}
+      <div className="absolute top-1 left-1 w-1.5 h-4 bg-leather-600/60 rounded-b-full" />
+      <div className="absolute top-1 right-1 w-1.5 h-4 bg-leather-600/60 rounded-b-full" />
+    </div>
+    {/* Legs */}
+    <div className="flex gap-0.5 justify-center">
+      <div className="w-2 h-5 bg-leather-800/80 rounded-b" />
+      <div className="w-2 h-5 bg-leather-800/80 rounded-b" />
+    </div>
+
+    {/* Dialogue pending indicator */}
+    {hasDialogue && (
+      <div className="absolute -top-7 left-1/2 -translate-x-1/2 animate-bounce">
+        <div className="relative bg-gold/90 text-leather-900 rounded-full w-5 h-5 flex items-center justify-center shadow-lg shadow-gold/30">
+          <span className="text-[10px] font-bold leading-none">!</span>
+          <div className="absolute inset-0 rounded-full bg-gold/40 animate-ping" />
+        </div>
+      </div>
+    )}
+  </div>
+);
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 const RanchMap: React.FC = () => {
@@ -338,6 +378,9 @@ const RanchMap: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* ── MANUEL — Maioral ── */}
+          <ManuelFigure hasDialogue={!!state.pendingDialogue} />
 
           {/* ── CASA PRINCIPAL ── */}
           <div

@@ -7,6 +7,8 @@ import {
 import { applyMonthlyGrowth } from '../utils/animalGrowth';
 import { animals as initialAnimals } from '../data/animals';
 import type { Animal } from '../types/animal';
+import { GREETING_DIALOGUE, pickMonthlyDialogue } from '../data/maioralDialogues';
+import type { DialogueTemplate } from '../data/maioralDialogues';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,6 +32,15 @@ export interface BuildingNotification {
   label: string;
 }
 
+export type { DialogueTemplate as MaioralDialogue };
+
+export interface DialogueRecord {
+  dialogueId: string;
+  choice: string;
+  month: Month;
+  year: number;
+}
+
 export interface GameState {
   year: number;
   month: Month;
@@ -38,11 +49,14 @@ export interface GameState {
   economy: EconomyState;
   animals: Animal[];
   notifications: Partial<Record<BuildingKey, BuildingNotification>>;
+  pendingDialogue: DialogueTemplate | null;
+  dialogueHistory: DialogueRecord[];
 }
 
 type GameAction =
   | { type: 'ADVANCE_MONTH' }
-  | { type: 'DISMISS_NOTIFICATION'; building: BuildingKey };
+  | { type: 'DISMISS_NOTIFICATION'; building: BuildingKey }
+  | { type: 'ANSWER_DIALOGUE'; choice: string };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -169,6 +183,8 @@ function advanceMonthState(state: GameState): GameState {
     economy: newEconomy,
     animals: newAnimals,
     notifications: newNotifications,
+    pendingDialogue: pickMonthlyDialogue(),
+    dialogueHistory: state.dialogueHistory,
   };
 }
 
@@ -180,6 +196,20 @@ function reducer(state: GameState, action: GameAction): GameState {
       const notifications = { ...state.notifications };
       delete notifications[action.building];
       return { ...state, notifications };
+    }
+    case 'ANSWER_DIALOGUE': {
+      if (!state.pendingDialogue) return state;
+      const record: DialogueRecord = {
+        dialogueId: state.pendingDialogue.id,
+        choice: action.choice,
+        month: state.month,
+        year: state.year,
+      };
+      return {
+        ...state,
+        pendingDialogue: null,
+        dialogueHistory: [record, ...state.dialogueHistory],
+      };
     }
     default:
       return state;
@@ -203,6 +233,8 @@ const INITIAL_STATE: GameState = {
   economy: INITIAL_ECONOMY,
   animals: initialAnimals,
   notifications: {},
+  pendingDialogue: GREETING_DIALOGUE,
+  dialogueHistory: [],
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -211,6 +243,7 @@ interface GameStateContextValue {
   state: GameState;
   advanceMonth: () => void;
   dismissNotification: (building: BuildingKey) => void;
+  answerDialogue: (choice: string) => void;
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
@@ -221,9 +254,11 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
+  const answerDialogue = (choice: string) =>
+    dispatch({ type: 'ANSWER_DIALOGUE', choice });
 
   return (
-    <GameStateContext.Provider value={{ state, advanceMonth: advance, dismissNotification }}>
+    <GameStateContext.Provider value={{ state, advanceMonth: advance, dismissNotification, answerDialogue }}>
       {children}
     </GameStateContext.Provider>
   );
