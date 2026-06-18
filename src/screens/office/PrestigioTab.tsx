@@ -1,10 +1,13 @@
 import React from 'react';
 import { SectionTitle, StatBlock, EmptyState } from './OfficePrimitives';
+import { useGameState } from '../../store/gameState';
 
-const PRESTIGE_SCORE = 42;
+const PRESTIGE_MAX = 1000;
 
 const PrestigioTab: React.FC = () => {
-  const pct = PRESTIGE_SCORE;
+  const { state } = useGameState();
+  const prestige = state.prestige;
+  const pct = Math.round((prestige / PRESTIGE_MAX) * 100);
   const segments = 20;
 
   return (
@@ -40,8 +43,8 @@ const PrestigioTab: React.FC = () => {
             </div>
           </div>
           <div className="text-right shrink-0">
-            <p className="font-display text-4xl text-gold">{pct}</p>
-            <p className="text-ivory/30 text-[10px] font-body uppercase tracking-wider">/ 100</p>
+            <p className="font-display text-4xl text-gold">{prestige}</p>
+            <p className="text-ivory/30 text-[10px] font-body uppercase tracking-wider">/ {PRESTIGE_MAX}</p>
           </div>
         </div>
       </div>

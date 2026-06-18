@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useGameState } from '../store/gameState';
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -32,10 +33,13 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, to, badge }) => 
 );
 
 const Sidebar: React.FC = () => {
+  const { state } = useGameState();
+  const activeAnimalCount = state.animals.filter(a => a.status === 'Ativo').length;
+
   const menuItems = [
     { icon: '🏘️', label: 'Herdade', to: '/herdade' },
     { icon: '🏛️', label: 'Escritório', to: '/escritorio' },
-    { icon: '🐂', label: 'Efetivo', to: '/efetivo', badge: 42 },
+    { icon: '🐂', label: 'Efetivo', to: '/efetivo', badge: activeAnimalCount },
     { icon: '❤️', label: 'Reprodução', to: '/reproducao' },
     { icon: '🎯', label: 'Tentas', to: '/tentas' },
     { icon: '🏇', label: 'Corridas', to: '/corridas' },

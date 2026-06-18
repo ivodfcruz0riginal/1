@@ -9,18 +9,36 @@ const SEASON_ICONS: Record<string, string> = {
   Inverno: '❄️',
 };
 
-const EVENTS = [
-  { date: '15 Mar 1985', type: 'Tienta',     title: 'Tienta — Cercado Norte',               icon: '🎯', variant: 'amber' },
-  { date: '18 Mar 1985', type: 'Corrida',    title: 'Corrida de Touros — Lisboa',            icon: '🏟️', variant: 'red' },
-  { date: '22 Mar 1985', type: 'Leilão',     title: 'Leilão — Évora',                        icon: '💰', variant: 'green' },
-  { date: '25 Mar 1985', type: 'Reprodução', title: 'Início da Temporada de Reprodução',     icon: '❤️', variant: 'rose' },
-  { date: '10 Abr 1985', type: 'Corrida',    title: 'Corrida de Touros — Moita',             icon: '🏟️', variant: 'red' },
-  { date: '20 Abr 1985', type: 'Visita',     title: 'Visita de Ganadeiro Espanhol',          icon: '🤝', variant: 'sky' },
-] as const;
+const RECURRING_EVENTS = [
+  { monthOffset: 0, type: 'Tienta',     title: 'Tienta Ordinária — Cercado Norte',        icon: '🎯', variant: 'amber' as const },
+  { monthOffset: 1, type: 'Corrida',    title: 'Corrida de Touros — Lisboa',               icon: '🏟️', variant: 'red' as const },
+  { monthOffset: 1, type: 'Leilão',     title: 'Leilão de Gado — Évora',                   icon: '💰', variant: 'green' as const },
+  { monthOffset: 2, type: 'Reprodução', title: 'Início da Temporada de Reprodução',        icon: '❤️', variant: 'rose' as const },
+  { monthOffset: 2, type: 'Corrida',    title: 'Corrida de Touros — Moita',                icon: '🏟️', variant: 'red' as const },
+  { monthOffset: 3, type: 'Visita',     title: 'Visita Veterinária Trimestral',            icon: '🩺', variant: 'sky' as const },
+];
+
+const MONTH_NAMES = [
+  'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+  'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
+];
+
+const ALL_MONTHS = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
 
 const CalendarioTab: React.FC = () => {
   const { state } = useGameState();
   const seasonIcon = SEASON_ICONS[state.season] ?? '🌍';
+  const currentIdx = ALL_MONTHS.indexOf(state.month);
+
+  const upcomingEvents = RECURRING_EVENTS.map(ev => {
+    const targetIdx = (currentIdx + ev.monthOffset) % 12;
+    const targetYear = state.year + Math.floor((currentIdx + ev.monthOffset) / 12);
+    const date = `${MONTH_NAMES[targetIdx]} ${targetYear}`;
+    return { ...ev, date };
+  });
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -42,7 +60,7 @@ const CalendarioTab: React.FC = () => {
 
       <SectionTitle>Próximos Eventos</SectionTitle>
       <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-        {EVENTS.map((ev, i) => (
+        {upcomingEvents.map((ev, i) => (
           <PaperCard key={i}>
             <div className="flex items-center gap-3">
               <span className="text-xl shrink-0">{ev.icon}</span>

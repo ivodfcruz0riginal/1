@@ -169,9 +169,9 @@ const Header: React.FC = () => {
 
         {/* Right: Stats + Consequence notification */}
         <div className="flex items-center gap-3">
-          <StatBadge icon="👑" value="250" label="Prestígio" />
+          <StatBadge icon="👑" value={state.prestige} label="Prestígio" />
           <StatBadge icon="💶" value={formatEuro(state.economy.treasury)} label="Tesouraria" highlight />
-          <StatBadge icon="🐂" value="42" label="Efetivo" />
+          <StatBadge icon="🐂" value={state.animals.filter(a => a.status === 'Ativo').length} label="Efetivo" />
 
           {/* Consequence notification bell */}
           <button

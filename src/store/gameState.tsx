@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import {
   INITIAL_ECONOMY,
   applyMonthToEconomy,
@@ -23,6 +23,14 @@ import {
 } from '../services/locationService';
 
 // ── Types ────────────────────────────────────────────────────────────────────
+
+export type GamePhase =
+  | 'MonthStart'
+  | 'DailyPlanning'
+  | 'EstateManagement'
+  | 'Decisions'
+  | 'EndOfMonth'
+  | 'Simulation';
 
 export type Month =
   | 'Janeiro' | 'Fevereiro' | 'Março' | 'Abril' | 'Maio' | 'Junho'
@@ -83,6 +91,9 @@ export interface GameState {
   decisionHistory: DecisionRecord[];
   locations: Location[];
   activeLocationId: LocationId | null;
+  prestige: number;
+  phase: GamePhase;
+  hasOpenedBuildingThisMonth: boolean;
 }
 
 type GameAction =
@@ -96,7 +107,8 @@ type GameAction =
   | { type: 'UPDATE_LOCATION_CONDITION'; id: LocationId; condition: LocationCondition }
   | { type: 'ADD_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
   | { type: 'CLEAR_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
-  | { type: 'UPDATE_LOCATION_OCCUPATION'; id: LocationId; occupation: number };
+  | { type: 'UPDATE_LOCATION_OCCUPATION'; id: LocationId; occupation: number }
+  | { type: 'SET_PHASE'; phase: GamePhase };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -159,6 +171,19 @@ function pickNotification(pool: BuildingNotification[]): BuildingNotification {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// ── Phase computation ─────────────────────────────────────────────────────────
+
+function computePhase(
+  pendingDialogue: DialogueTemplate | null,
+  pendingDecision: Decision | null,
+  hasOpenedBuilding: boolean,
+): GamePhase {
+  if (pendingDialogue !== null) return 'MonthStart';
+  if (pendingDecision !== null) return 'Decisions';
+  if (!hasOpenedBuilding) return 'DailyPlanning';
+  return 'EstateManagement';
+}
+
 // ── Reducer ──────────────────────────────────────────────────────────────────
 
 let _eventIdCounter = 0;
@@ -203,7 +228,6 @@ function advanceMonthState(state: GameState): GameState {
 
   const newLog = [...newEvents, ...state.eventLog].slice(0, 20);
 
-  // Each month: 70% chance of escritório notification, 30% chance per cercado
   const newNotifications = { ...state.notifications };
   if (Math.random() < 0.7) {
     newNotifications.escritorio = pickNotification(ESCRITORIO_NOTIFICATIONS);
@@ -215,6 +239,15 @@ function advanceMonthState(state: GameState): GameState {
     newNotifications.cercado_sul = pickNotification(CERCADO_NOTIFICATIONS);
   }
 
+  const profit = newEconomy.treasury - state.economy.treasury;
+  const prestigeGain = profit > 0 ? 3 : 1;
+  const newPrestige = state.prestige + prestigeGain;
+
+  const nextDialogue = pickMonthlyDialogue();
+  const nextDecision = Math.random() < 0.55
+    ? pickDecision(state.decisionHistory.slice(0, 3).map(r => r.decisionId))
+    : null;
+
   return {
     year: nextYear,
     month: nextMonth,
@@ -223,15 +256,16 @@ function advanceMonthState(state: GameState): GameState {
     economy: newEconomy,
     animals: newAnimals,
     notifications: newNotifications,
-    pendingDialogue: pickMonthlyDialogue(),
+    pendingDialogue: nextDialogue,
     dialogueHistory: state.dialogueHistory,
     dailyTasks: generateDailyTasks(),
-    pendingDecision: Math.random() < 0.55
-      ? pickDecision(state.decisionHistory.slice(0, 3).map(r => r.decisionId))
-      : null,
+    pendingDecision: nextDecision,
     decisionHistory: state.decisionHistory,
     locations: state.locations,
     activeLocationId: state.activeLocationId,
+    prestige: newPrestige,
+    phase: computePhase(nextDialogue, nextDecision, false),
+    hasOpenedBuildingThisMonth: false,
   };
 }
 
@@ -252,10 +286,12 @@ function reducer(state: GameState, action: GameAction): GameState {
         month: state.month,
         year: state.year,
       };
+      const newPhase = computePhase(null, state.pendingDecision, state.hasOpenedBuildingThisMonth);
       return {
         ...state,
         pendingDialogue: null,
         dialogueHistory: [record, ...state.dialogueHistory],
+        phase: newPhase,
       };
     }
     case 'COMPLETE_TASK': {
@@ -286,14 +322,23 @@ function reducer(state: GameState, action: GameAction): GameState {
         year: state.year,
         result: null,
       };
+      const newPhase = computePhase(state.pendingDialogue, null, state.hasOpenedBuildingThisMonth);
       return {
         ...state,
         pendingDecision: null,
         decisionHistory: [record, ...state.decisionHistory],
+        phase: newPhase,
       };
     }
-    case 'SET_ACTIVE_LOCATION':
-      return { ...state, activeLocationId: action.id };
+    case 'SET_ACTIVE_LOCATION': {
+      const opened = action.id !== null ? true : state.hasOpenedBuildingThisMonth;
+      return {
+        ...state,
+        activeLocationId: action.id,
+        hasOpenedBuildingThisMonth: opened,
+        phase: computePhase(state.pendingDialogue, state.pendingDecision, opened),
+      };
+    }
     case 'UPDATE_LOCATION_CONDITION':
       return { ...state, locations: updateLocationCondition(state.locations, action.id, action.condition) };
     case 'ADD_LOCATION_NOTIFICATION':
@@ -302,9 +347,31 @@ function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, locations: clearLocationNotification(state.locations, action.id, action.notification) };
     case 'UPDATE_LOCATION_OCCUPATION':
       return { ...state, locations: updateLocationOccupation(state.locations, action.id, action.occupation) };
+    case 'SET_PHASE':
+      return { ...state, phase: action.phase };
     default:
       return state;
   }
+}
+
+// ── LocalStorage ─────────────────────────────────────────────────────────────
+
+const SAVE_KEY = 'heranca_brava_v1';
+
+function loadFromStorage(): GameState | null {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    return { ...INITIAL_STATE, ...JSON.parse(raw) };
+  } catch {
+    return null;
+  }
+}
+
+function saveToStorage(state: GameState): void {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  } catch {}
 }
 
 // ── Initial state ────────────────────────────────────────────────────────────
@@ -331,6 +398,9 @@ const INITIAL_STATE: GameState = {
   decisionHistory: [],
   locations: INITIAL_LOCATIONS,
   activeLocationId: null,
+  prestige: 250,
+  phase: 'MonthStart',
+  hasOpenedBuildingThisMonth: false,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -348,12 +418,17 @@ interface GameStateContextValue {
   addLocationNotification: (id: LocationId, notification: LocationNotification) => void;
   clearLocationNotification: (id: LocationId, notification: LocationNotification) => void;
   updateLocationOccupation: (id: LocationId, occupation: number) => void;
+  setPhase: (phase: GamePhase) => void;
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
 
 export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
+  const [state, dispatch] = useReducer(reducer, loadFromStorage() ?? INITIAL_STATE);
+
+  useEffect(() => {
+    saveToStorage(state);
+  }, [state]);
 
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
@@ -368,21 +443,32 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     dispatch({ type: 'RESOLVE_DECISION', choice });
   const setActiveLocation = (id: LocationId | null) =>
     dispatch({ type: 'SET_ACTIVE_LOCATION', id });
-  const updateLocationCondition = (id: LocationId, condition: LocationCondition) =>
+  const updateLocationConditionFn = (id: LocationId, condition: LocationCondition) =>
     dispatch({ type: 'UPDATE_LOCATION_CONDITION', id, condition });
-  const addLocationNotification = (id: LocationId, notification: LocationNotification) =>
+  const addLocationNotificationFn = (id: LocationId, notification: LocationNotification) =>
     dispatch({ type: 'ADD_LOCATION_NOTIFICATION', id, notification });
-  const clearLocationNotification = (id: LocationId, notification: LocationNotification) =>
+  const clearLocationNotificationFn = (id: LocationId, notification: LocationNotification) =>
     dispatch({ type: 'CLEAR_LOCATION_NOTIFICATION', id, notification });
-  const updateLocationOccupation = (id: LocationId, occupation: number) =>
+  const updateLocationOccupationFn = (id: LocationId, occupation: number) =>
     dispatch({ type: 'UPDATE_LOCATION_OCCUPATION', id, occupation });
+  const setPhase = (phase: GamePhase) =>
+    dispatch({ type: 'SET_PHASE', phase });
 
   return (
     <GameStateContext.Provider value={{
-      state, advanceMonth: advance, dismissNotification, answerDialogue,
-      completeTask, ignoreTask, resolveDecision,
-      setActiveLocation, updateLocationCondition, addLocationNotification,
-      clearLocationNotification, updateLocationOccupation,
+      state,
+      advanceMonth: advance,
+      dismissNotification,
+      answerDialogue,
+      completeTask,
+      ignoreTask,
+      resolveDecision,
+      setActiveLocation,
+      updateLocationCondition: updateLocationConditionFn,
+      addLocationNotification: addLocationNotificationFn,
+      clearLocationNotification: clearLocationNotificationFn,
+      updateLocationOccupation: updateLocationOccupationFn,
+      setPhase,
     }}>
       {children}
     </GameStateContext.Provider>
