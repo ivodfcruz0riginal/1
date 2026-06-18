@@ -1,6 +1,8 @@
 import React from 'react';
 import { useGameState } from '../store/gameState';
 import type { DecisionCategory } from '../data/decisions';
+import { useConsequences } from '../store/consequenceStore';
+import { generateConsequencesFromDecision } from '../services/consequenceService';
 
 // ── Category styling ──────────────────────────────────────────────────────────
 
@@ -49,11 +51,22 @@ const ImagePlaceholder: React.FC<{ hint: string; category: DecisionCategory }> =
 
 const DecisionWindow: React.FC = () => {
   const { state, resolveDecision } = useGameState();
+  const { addConsequences } = useConsequences();
   const { pendingDecision } = state;
 
   if (!pendingDecision) return null;
 
   const catStyle = CATEGORY_STYLE[pendingDecision.category];
+
+  const handleChoice = (choice: string, index: number) => {
+    const consequences = generateConsequencesFromDecision(
+      pendingDecision.id,
+      index,
+      { month: state.month, year: state.year },
+    );
+    if (consequences.length > 0) addConsequences(consequences);
+    resolveDecision(choice);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -125,7 +138,7 @@ const DecisionWindow: React.FC = () => {
                 {pendingDecision.choices.map((choice, i) => (
                   <button
                     key={i}
-                    onClick={() => resolveDecision(choice)}
+                    onClick={() => handleChoice(choice, i)}
                     className="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded border transition-all duration-200 group"
                     style={{
                       background: 'rgba(26,17,8,0.88)',

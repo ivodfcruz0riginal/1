@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -7,11 +7,28 @@ import MaioralDialogue from './components/MaioralDialogue';
 import TasksPanel from './components/TasksPanel';
 import DecisionWindow from './components/DecisionWindow';
 import LocationDetailPanel from './components/LocationDetailPanel';
+import ConsequencePanel from './components/ConsequencePanel';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
 import EconomyScreen from './screens/EconomyScreen';
 import EscritorioScreen from './screens/EscritorioScreen';
-import { GameStateProvider } from './store/gameState';
+import { GameStateProvider, useGameState } from './store/gameState';
+import { ConsequenceProvider, useConsequences } from './store/consequenceStore';
+
+// ── Consequence processor — activates triggered consequences on month change ──
+
+const ConsequenceProcessor: React.FC = () => {
+  const { state } = useGameState();
+  const { triggerMonth } = useConsequences();
+
+  useEffect(() => {
+    triggerMonth(state.month, state.year);
+  }, [state.month, state.year]);
+
+  return null;
+};
+
+// ── Herdade page ──────────────────────────────────────────────────────────────
 
 const HerdadePage: React.FC = () => (
   <>
@@ -38,6 +55,8 @@ const HerdadePage: React.FC = () => (
     <MaioralDialogue />
   </>
 );
+
+// ── Layout ────────────────────────────────────────────────────────────────────
 
 const Layout: React.FC = () => {
   return (
@@ -73,17 +92,23 @@ const Layout: React.FC = () => {
         </div>
       </div>
 
-      {/* Decision Window — global, floats above all screens */}
+      {/* Global overlays */}
       <DecisionWindow />
+      <ConsequencePanel />
+      <ConsequenceProcessor />
     </div>
   );
 };
 
+// ── App ───────────────────────────────────────────────────────────────────────
+
 const App: React.FC = () => (
   <GameStateProvider>
-    <BrowserRouter>
-      <Layout />
-    </BrowserRouter>
+    <ConsequenceProvider>
+      <BrowserRouter>
+        <Layout />
+      </BrowserRouter>
+    </ConsequenceProvider>
   </GameStateProvider>
 );
 
