@@ -1,355 +1,220 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameState } from '../store/gameState';
-import { formatEuro, lastNMonths } from '../store/economyEngine';
-import EconomyScreen from './EconomyScreen';
+import DiarioTab from './office/DiarioTab';
+import JornalTab from './office/JornalTab';
+import EconomiaTab from './office/EconomiaTab';
+import CalendarioTab from './office/CalendarioTab';
+import ContratosTab from './office/ContratosTab';
+import LivroTab from './office/LivroTab';
+import PrestigioTab from './office/PrestigioTab';
+import AdministracaoTab from './office/AdministracaoTab';
 
-// ── Tab definitions ───────────────────────────────────────────────────────────
+// ── Tab config ────────────────────────────────────────────────────────────────
 
-type TabKey = 'diario' | 'jornal' | 'economia' | 'calendario' | 'convites' | 'contratos' | 'livro' | 'estatisticas';
+type TabKey = 'diario' | 'jornal' | 'economia' | 'calendario' | 'contratos' | 'livro' | 'prestigio' | 'administracao';
 
 const TABS: { key: TabKey; icon: string; label: string }[] = [
-  { key: 'diario',        icon: '📋', label: 'Diário' },
+  { key: 'diario',        icon: '📖', label: 'Diário' },
   { key: 'jornal',        icon: '📰', label: 'Jornal' },
   { key: 'economia',      icon: '💰', label: 'Economia' },
   { key: 'calendario',    icon: '📅', label: 'Calendário' },
-  { key: 'convites',      icon: '✉️',  label: 'Convites' },
   { key: 'contratos',     icon: '📜', label: 'Contratos' },
-  { key: 'livro',         icon: '📖', label: 'Livro da Casa' },
-  { key: 'estatisticas',  icon: '📊', label: 'Estatísticas' },
+  { key: 'livro',         icon: '📚', label: 'Livro da Casa' },
+  { key: 'prestigio',     icon: '🏆', label: 'Prestígio' },
+  { key: 'administracao', icon: '⚙️', label: 'Administração' },
 ];
 
-// ── Diário tab ────────────────────────────────────────────────────────────────
+// ── Office wall decorations ───────────────────────────────────────────────────
 
-const DiarioTab: React.FC = () => {
-  const { state } = useGameState();
-  const { eventLog } = state;
+const WallDecoration: React.FC = () => (
+  <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    {/* Wood wainscoting at bottom */}
+    <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-amber-950/25 to-transparent" />
 
-  return (
-    <div className="space-y-2 overflow-y-auto flex-1">
-      {eventLog.length === 0 ? (
-        <p className="text-ivory/30 text-sm font-body text-center py-12">Sem entradas no diário.</p>
-      ) : (
-        eventLog.map((item, idx) => (
-          <div
-            key={item.id}
-            className={`flex items-start gap-4 p-3 rounded-lg border transition-colors ${
-              idx === 0
-                ? 'bg-gold/8 border-gold/25'
-                : 'bg-leather-800/30 border-leather-700/30 hover:bg-leather-800/50'
-            }`}
-          >
-            <div className="shrink-0 text-right">
-              <p className="text-gold/70 text-[10px] font-body uppercase tracking-wider">{item.month.slice(0, 3)}</p>
-              <p className="text-ivory/50 text-xs font-display">{item.year}</p>
-            </div>
-            <div className="w-px self-stretch bg-leather-600/40 shrink-0" />
-            <p className={`text-sm font-body leading-relaxed ${idx === 0 ? 'text-ivory' : 'text-ivory/80'}`}>
-              {item.text}
-            </p>
-          </div>
-        ))
-      )}
-    </div>
-  );
-};
-
-// ── Jornal tab ────────────────────────────────────────────────────────────────
-
-const JORNAL_ITEMS = [
-  { date: 'Mar 1985', title: 'Ganaderia portuguesa destaca-se em Sevilha', body: 'A presença lusa nas praças espanholas cresce a cada temporada.' },
-  { date: 'Fev 1985', title: 'Novo regulamento de bem-estar animal aprovado', body: 'A federação taurina publicou novas regras de maneio dos efetivos.' },
-  { date: 'Jan 1985', title: 'Época taurina de 1985 promete ser histórica', body: 'Várias ganaderias já confirmaram presença nos principais cartazes.' },
-  { date: 'Dez 1984', title: 'Subsídios agrícolas para criadores aumentados', body: 'O governo amplia o apoio à criação de touro bravo no Alentejo.' },
-];
-
-const JornalTab: React.FC = () => (
-  <div className="space-y-3 overflow-y-auto flex-1">
-    {JORNAL_ITEMS.map((item, i) => (
-      <div key={i} className="bg-leather-800/30 border border-leather-700/30 rounded-lg p-4 hover:border-gold/20 transition-colors">
-        <div className="flex items-center gap-3 mb-2">
-          <span className="text-ivory/30 text-xs font-body">{item.date}</span>
-          <div className="h-px flex-1 bg-leather-600/30" />
-        </div>
-        <h4 className="font-display text-sm text-gold/90 tracking-wide mb-1">{item.title}</h4>
-        <p className="text-ivory/60 text-xs font-body leading-relaxed">{item.body}</p>
+    {/* Bull painting – top left */}
+    <div className="absolute top-6 left-6 w-20 h-16 opacity-20">
+      <div className="w-full h-full bg-leather-700/60 border border-leather-500/30 rounded flex items-center justify-center">
+        <span className="text-3xl">🐂</span>
       </div>
-    ))}
-    <div className="text-center py-4">
-      <p className="text-ivory/20 text-xs font-body">Mais notícias em breve</p>
+      {/* Frame */}
+      <div className="absolute -inset-1 border border-gold/20 rounded pointer-events-none" />
+      <div className="absolute -inset-2 border border-leather-600/20 rounded pointer-events-none" />
     </div>
+
+    {/* Map sketch – top right */}
+    <div className="absolute top-5 right-5 w-24 h-18 opacity-15">
+      <div className="w-full h-full bg-amber-950/40 border border-leather-500/20 rounded p-1.5">
+        <svg viewBox="0 0 100 80" className="w-full h-full">
+          <rect x="10" y="10" width="80" height="60" fill="none" stroke="#c9a227" strokeWidth="1" opacity="0.5" />
+          <path d="M10,40 Q30,35 50,40 Q70,45 90,40" fill="none" stroke="#c9a227" strokeWidth="0.8" opacity="0.4" />
+          <path d="M50,10 Q48,25 50,40 Q52,55 50,70" fill="none" stroke="#c9a227" strokeWidth="0.8" opacity="0.4" />
+          <circle cx="50" cy="40" r="3" fill="#c9a227" opacity="0.4" />
+          <text x="52" y="38" fontSize="6" fill="#c9a227" opacity="0.5">HF</text>
+        </svg>
+      </div>
+      <div className="absolute -inset-1 border border-gold/15 rounded pointer-events-none" />
+    </div>
+
+    {/* Bookshelf hint – right side centre */}
+    <div className="absolute top-1/2 -translate-y-1/2 right-3 flex flex-col gap-0.5 opacity-10">
+      {['bg-amber-800/60', 'bg-leather-600/60', 'bg-amber-900/60', 'bg-leather-700/60', 'bg-amber-700/60'].map((c, i) => (
+        <div key={i} className={`w-3 ${c} rounded-sm`} style={{ height: `${28 + i * 4}px` }} />
+      ))}
+    </div>
+
+    {/* Subtle vignette */}
+    <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/15" />
   </div>
 );
 
-// ── Calendário tab ────────────────────────────────────────────────────────────
+// ── Tab navigation ────────────────────────────────────────────────────────────
 
-const CALENDAR_EVENTS = [
-  { date: '15 Mar 1985', type: 'Tienta', title: 'Tienta — Cercado Norte', icon: '🎯' },
-  { date: '18 Mar 1985', type: 'Corrida', title: 'Corrida de Touros — Lisboa', icon: '🏟️' },
-  { date: '22 Mar 1985', type: 'Leilão', title: 'Leilão — Évora', icon: '💰' },
-  { date: '25 Mar 1985', type: 'Reprodução', title: 'Início da Temporada de Reprodução', icon: '❤️' },
-  { date: '10 Abr 1985', type: 'Corrida', title: 'Corrida de Touros — Moita', icon: '🏟️' },
-  { date: '20 Abr 1985', type: 'Visita', title: 'Visita de Ganadeiro Espanhol', icon: '🤝' },
-];
+interface TabBarProps {
+  active: TabKey;
+  onChange: (key: TabKey) => void;
+}
 
-const typeColors: Record<string, string> = {
-  Tienta: 'border-amber-500/40 text-amber-400',
-  Corrida: 'border-red-500/40 text-red-400',
-  Leilão: 'border-emerald-500/40 text-emerald-400',
-  Reprodução: 'border-rose-500/40 text-rose-400',
-  Visita: 'border-sky-500/40 text-sky-400',
-};
-
-const CalendarioTab: React.FC = () => (
-  <div className="space-y-2 overflow-y-auto flex-1">
-    {CALENDAR_EVENTS.map((ev, i) => (
-      <div key={i} className="flex items-center gap-4 p-3 bg-leather-800/30 border border-leather-700/30 rounded-lg hover:border-gold/20 transition-colors">
-        <span className="text-xl shrink-0">{ev.icon}</span>
-        <div className="flex-1 min-w-0">
-          <p className="text-ivory/90 text-sm font-body truncate">{ev.title}</p>
-          <p className="text-ivory/40 text-xs font-body mt-0.5">{ev.date}</p>
-        </div>
-        <span className={`text-[10px] font-body px-2 py-0.5 rounded-full border shrink-0 ${typeColors[ev.type] ?? 'border-leather-500/40 text-ivory/50'}`}>
-          {ev.type}
-        </span>
-      </div>
+const TabBar: React.FC<TabBarProps> = ({ active, onChange }) => (
+  <div className="flex items-end gap-0 overflow-x-auto shrink-0 border-b border-leather-700/50">
+    {TABS.map(tab => (
+      <button
+        key={tab.key}
+        onClick={() => onChange(tab.key)}
+        className={`relative flex items-center gap-1.5 px-4 py-3 text-xs font-body whitespace-nowrap transition-all duration-200 border-b-2 ${
+          active === tab.key
+            ? 'border-gold text-gold bg-gradient-to-t from-gold/8 to-transparent'
+            : 'border-transparent text-ivory/45 hover:text-ivory/70 hover:bg-leather-700/20'
+        }`}
+      >
+        <span className="text-sm">{tab.icon}</span>
+        <span className="uppercase tracking-wider text-[11px]">{tab.label}</span>
+      </button>
     ))}
   </div>
 );
 
-// ── Convites tab ──────────────────────────────────────────────────────────────
-
-const CONVITES = [
-  { from: 'Praça de Touros de Lisboa', date: 'Jun 1985', desc: 'Corrida de gala. Dois toiros da ganaderia.', status: 'Pendente' },
-  { from: 'Ganadería San Marcos (Sevilha)', date: 'Abr 1985', desc: 'Convite para tienta cruzada.', status: 'Pendente' },
-  { from: 'Município de Évora', date: 'Mai 1985', desc: 'Corrida de Festas da Cidade.', status: 'Aceite' },
-];
-
-const ConvitesTab: React.FC = () => (
-  <div className="space-y-3 overflow-y-auto flex-1">
-    {CONVITES.map((c, i) => (
-      <div key={i} className="bg-leather-800/30 border border-leather-700/30 rounded-lg p-4 hover:border-gold/20 transition-colors">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-gold/80 text-sm font-display tracking-wide truncate">{c.from}</p>
-            <p className="text-ivory/60 text-xs font-body mt-1 leading-relaxed">{c.desc}</p>
-            <p className="text-ivory/30 text-[10px] font-body mt-1">{c.date}</p>
-          </div>
-          <span className={`text-[10px] font-body px-2 py-0.5 rounded-full border shrink-0 mt-0.5 ${
-            c.status === 'Aceite' ? 'border-emerald-500/40 text-emerald-400' : 'border-amber-500/40 text-amber-400'
-          }`}>
-            {c.status}
-          </span>
-        </div>
-      </div>
-    ))}
-    {CONVITES.length === 0 && (
-      <p className="text-ivory/30 text-sm font-body text-center py-12">Nenhum convite pendente.</p>
-    )}
-  </div>
-);
-
-// ── Livro da Casa tab ─────────────────────────────────────────────────────────
-
-const LivroTab: React.FC = () => {
-  const { state } = useGameState();
-  return (
-    <div className="space-y-4 overflow-y-auto flex-1">
-      <div className="bg-leather-800/30 border border-leather-700/30 rounded-lg p-4">
-        <h4 className="font-display text-xs text-gold/70 uppercase tracking-widest mb-3">Fundação</h4>
-        <p className="text-ivory/70 text-sm font-body leading-relaxed">
-          A Herdade da Ferraria foi fundada em 1947 na Província do Alentejo. Com 1.250 hectares,
-          a ganaderia dedica-se à criação de touro bravo das mais nobres castas portuguesas e espanholas.
-          Em {state.year}, o efetivo conta com {state.animals.length} animais.
-        </p>
-      </div>
-      <div className="bg-leather-800/30 border border-leather-700/30 rounded-lg p-4">
-        <h4 className="font-display text-xs text-gold/70 uppercase tracking-widest mb-3">Castas Presentes</h4>
-        <div className="flex flex-wrap gap-2">
-          {['Miura', 'Pablo Romero', 'Concha y Sierra', 'Cruzado'].map(b => (
-            <span key={b} className="text-xs font-body text-ivory/70 px-3 py-1 bg-leather-700/40 border border-leather-600/30 rounded-full">
-              {b}
-            </span>
-          ))}
-        </div>
-      </div>
-      <div className="bg-leather-800/30 border border-leather-700/30 rounded-lg p-4">
-        <h4 className="font-display text-xs text-gold/70 uppercase tracking-widest mb-3">Marcos Históricos</h4>
-        <div className="space-y-2">
-          {[
-            { year: 1947, text: 'Fundação da Herdade da Ferraria.' },
-            { year: 1952, text: 'Primeira corrida com animais da ganaderia em Lisboa.' },
-            { year: 1968, text: 'Introdução da casta Miura no efetivo.' },
-            { year: 1975, text: 'Maior temporada da história: 24 toiros lidados.' },
-            { year: 1985, text: 'Nova geração de sementais assume o protagonismo.' },
-          ].map((m, i) => (
-            <div key={i} className="flex gap-3 items-start">
-              <span className="text-gold/50 font-display text-xs w-10 shrink-0">{m.year}</span>
-              <p className="text-ivory/60 text-xs font-body leading-relaxed">{m.text}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Estatísticas tab ──────────────────────────────────────────────────────────
-
-const EstatisticasTab: React.FC = () => {
-  const { state } = useGameState();
-  const { animals, economy } = state;
-
-  const active = animals.filter(a => a.status === 'Ativo').length;
-  const machos = animals.filter(a => a.sex === 'Macho' && a.status !== 'Morto' && a.status !== 'Vendido').length;
-  const femeas = animals.filter(a => a.sex === 'Fêmea' && a.status !== 'Morto' && a.status !== 'Vendido').length;
-  const avgBravery = animals.length > 0
-    ? Math.round(animals.reduce((s, a) => s + a.bravery, 0) / animals.length)
-    : 0;
-  const last12 = lastNMonths(economy.history, 12);
-  const totalIncome = last12.reduce((s, r) => s + r.income, 0);
-  const totalExpenses = last12.reduce((s, r) => s + r.expenses, 0);
-
-  return (
-    <div className="space-y-4 overflow-y-auto flex-1">
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { label: 'Total de Animais', value: animals.length, icon: '🐂' },
-          { label: 'Animais Ativos', value: active, icon: '✅' },
-          { label: 'Machos', value: machos, icon: '🐂' },
-          { label: 'Fêmeas', value: femeas, icon: '🐄' },
-          { label: 'Bravura Média', value: `${avgBravery}/100`, icon: '⚔️' },
-          { label: 'Meses Registados', value: economy.history.length, icon: '📅' },
-        ].map(s => (
-          <div key={s.label} className="bg-leather-800/30 border border-leather-700/30 rounded-lg p-3 flex items-center gap-3">
-            <span className="text-xl">{s.icon}</span>
-            <div>
-              <p className="text-ivory/40 text-[10px] font-body uppercase tracking-wider">{s.label}</p>
-              <p className="font-display text-lg text-ivory">{s.value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-      {last12.length > 0 && (
-        <div className="bg-leather-800/30 border border-leather-700/30 rounded-lg p-4">
-          <h4 className="font-display text-xs text-gold/70 uppercase tracking-widest mb-3">Últimos 12 Meses</h4>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="border-l-2 border-emerald-500/40 pl-3">
-              <p className="text-ivory/40 text-[10px] font-body uppercase">Receitas Totais</p>
-              <p className="font-display text-base text-emerald-400">{formatEuro(totalIncome)}</p>
-            </div>
-            <div className="border-l-2 border-red-500/40 pl-3">
-              <p className="text-ivory/40 text-[10px] font-body uppercase">Despesas Totais</p>
-              <p className="font-display text-base text-red-400">{formatEuro(totalExpenses)}</p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ── Contratos tab ─────────────────────────────────────────────────────────────
-
-const CONTRATOS = [
-  { title: 'Fornecimento de feno — Cooperativa do Alentejo', value: '1.200€/mês', status: 'Ativo', expires: 'Dez 1985' },
-  { title: 'Serviços veterinários — Dr. António Ferreira', value: '800€/mês', status: 'Ativo', expires: 'Jun 1986' },
-  { title: 'Transporte de animais — Transportes Ibéricos', value: 'Por viagem', status: 'Ativo', expires: 'Mar 1986' },
-  { title: 'Seguro de efetivo — Seguradora Nacional', value: '2.400€/ano', status: 'Em renovação', expires: 'Abr 1985' },
-];
-
-const ContratosTab: React.FC = () => (
-  <div className="space-y-3 overflow-y-auto flex-1">
-    {CONTRATOS.map((c, i) => (
-      <div key={i} className="bg-leather-800/30 border border-leather-700/30 rounded-lg p-4 hover:border-gold/20 transition-colors">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-ivory/90 text-sm font-body truncate">{c.title}</p>
-            <div className="flex items-center gap-3 mt-1.5">
-              <span className="text-gold/70 text-xs font-body">{c.value}</span>
-              <span className="text-ivory/30 text-xs">·</span>
-              <span className="text-ivory/40 text-[10px] font-body">Expira: {c.expires}</span>
-            </div>
-          </div>
-          <span className={`text-[10px] font-body px-2 py-0.5 rounded-full border shrink-0 mt-0.5 ${
-            c.status === 'Ativo' ? 'border-emerald-500/40 text-emerald-400' : 'border-amber-500/40 text-amber-400'
-          }`}>
-            {c.status}
-          </span>
-        </div>
-      </div>
-    ))}
-    <div className="text-center py-4">
-      <p className="text-ivory/20 text-xs font-body">Gestão completa de contratos em breve</p>
-    </div>
-  </div>
-);
-
-// ── Main Screen ───────────────────────────────────────────────────────────────
+// ── Main screen ───────────────────────────────────────────────────────────────
 
 const EscritorioScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('diario');
   const navigate = useNavigate();
-  const { dismissNotification } = useGameState();
+  const { state, dismissNotification } = useGameState();
 
-  // Dismiss escritório notification when entering this screen
   useEffect(() => {
     dismissNotification('escritorio');
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-leather-900">
-      {/* Page header */}
-      <div className="px-6 py-4 border-b border-leather-700/40 bg-leather-900/80 shrink-0">
-        <div className="flex items-center gap-4">
+    <div className="h-full flex flex-col overflow-hidden relative"
+      style={{ background: 'linear-gradient(160deg, #1a130e 0%, #150f0a 60%, #1c1108 100%)' }}>
+
+      <WallDecoration />
+
+      {/* Header — aged wood look */}
+      <div className="relative z-10 shrink-0 border-b border-leather-600/50"
+        style={{ background: 'linear-gradient(180deg, #2a1c12 0%, #1e1409 100%)' }}>
+        <div className="px-6 py-4 flex items-center gap-4">
           <button
             onClick={() => navigate('/herdade')}
-            className="text-ivory/40 hover:text-gold transition-colors text-sm font-body flex items-center gap-1.5"
+            className="text-ivory/35 hover:text-gold/80 transition-colors text-xs font-body flex items-center gap-1.5 mr-2"
           >
             ← Herdade
           </button>
-          <div className="h-4 w-px bg-leather-600/50" />
-          <div>
-            <h2 className="font-display text-2xl text-gold tracking-widest uppercase">Escritório</h2>
-            <p className="text-ivory/50 text-sm font-body mt-0.5">Gestão da Herdade da Ferraria</p>
+          <div className="h-4 w-px bg-leather-600/40" />
+
+          {/* Office nameplate */}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded bg-leather-700/60 border border-gold/20 flex items-center justify-center shrink-0">
+              <span className="text-gold/60 text-sm">🏛️</span>
+            </div>
+            <div>
+              <h2 className="font-display text-lg text-gold tracking-widest uppercase leading-none">Escritório</h2>
+              <p className="text-ivory/35 text-[11px] font-body mt-0.5">Herdade da Ferraria · {state.month} {state.year}</p>
+            </div>
+          </div>
+
+          {/* Season badge */}
+          <div className="ml-auto bg-leather-800/60 border border-leather-600/30 rounded px-3 py-1.5">
+            <p className="text-ivory/30 text-[9px] font-body uppercase tracking-widest">{state.season}</p>
           </div>
         </div>
+
+        <TabBar active={activeTab} onChange={setActiveTab} />
       </div>
 
-      {/* Tab bar */}
-      <div className="px-6 border-b border-leather-700/30 bg-leather-900/60 shrink-0">
-        <div className="flex items-end gap-0.5 overflow-x-auto">
-          {TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-body whitespace-nowrap border-b-2 transition-all duration-150 ${
-                activeTab === tab.key
-                  ? 'border-gold text-gold bg-gold/5'
-                  : 'border-transparent text-ivory/50 hover:text-ivory/80 hover:border-leather-500/50'
-              }`}
-            >
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Content area — two-panel layout: ambient sidebar + main content */}
+      <div className="relative z-10 flex-1 flex overflow-hidden">
 
-      {/* Tab content */}
-      <div className="flex-1 overflow-hidden flex flex-col p-6">
-        {activeTab === 'diario' && <DiarioTab />}
-        {activeTab === 'jornal' && <JornalTab />}
-        {activeTab === 'economia' && (
-          <div className="flex-1 -m-6 overflow-hidden">
-            <EconomyScreen />
+        {/* Left ambient panel — wood texture, wall art */}
+        <div className="w-48 shrink-0 border-r border-leather-700/40 flex flex-col relative overflow-hidden"
+          style={{ background: 'linear-gradient(180deg, #1e1409 0%, #170f08 100%)' }}>
+
+          {/* Wood grain lines */}
+          <div className="absolute inset-0 pointer-events-none opacity-[0.06]">
+            {Array.from({ length: 18 }).map((_, i) => (
+              <div key={i} className="absolute inset-x-0 h-px bg-amber-800"
+                style={{ top: `${(i + 1) * 5.5}%`, transform: `skewY(${i % 2 === 0 ? 0.3 : -0.3}deg)` }} />
+            ))}
           </div>
-        )}
-        {activeTab === 'calendario' && <CalendarioTab />}
-        {activeTab === 'convites' && <ConvitesTab />}
-        {activeTab === 'contratos' && <ContratosTab />}
-        {activeTab === 'livro' && <LivroTab />}
-        {activeTab === 'estatisticas' && <EstatisticasTab />}
+
+          {/* Bull silhouette painting */}
+          <div className="mx-4 mt-4 mb-3 relative">
+            <div className="h-28 bg-gradient-to-b from-leather-800/40 to-leather-900/60 border border-leather-600/30 rounded flex items-center justify-center overflow-hidden">
+              <span className="text-5xl opacity-25">🐂</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-leather-900/30 to-transparent" />
+            </div>
+            {/* Painting frame */}
+            <div className="absolute -inset-1 border border-gold/15 rounded pointer-events-none" />
+            <div className="absolute -inset-2 border border-leather-600/20 rounded pointer-events-none" />
+            <p className="text-ivory/15 text-[9px] font-body text-center mt-2 italic">Herdade da Ferraria</p>
+          </div>
+
+          {/* Divider */}
+          <div className="mx-4 h-px bg-gradient-to-r from-transparent via-gold/15 to-transparent" />
+
+          {/* Quick stats */}
+          <div className="mx-4 mt-3 space-y-2">
+            {[
+              { label: 'Efectivo', value: `${state.animals.length}` },
+              { label: 'Tesouraria', value: `${Math.round(state.economy.treasury / 1000)}k€` },
+              { label: 'Registos', value: `${state.eventLog.length}` },
+            ].map(s => (
+              <div key={s.label} className="flex items-baseline justify-between">
+                <span className="text-ivory/25 text-[10px] font-body uppercase tracking-wider">{s.label}</span>
+                <span className="text-gold/60 text-xs font-display">{s.value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Subtle seal at bottom */}
+          <div className="mt-auto mx-auto mb-5 opacity-10">
+            <div className="w-12 h-12 rounded-full border-2 border-gold/60 flex items-center justify-center">
+              <span className="text-xl">🐂</span>
+            </div>
+            <p className="text-gold/40 text-[8px] font-body text-center mt-1 tracking-widest uppercase">Est. 1947</p>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {/* Paper surface */}
+          <div className="flex-1 overflow-hidden m-5 rounded-lg relative"
+            style={{ background: 'linear-gradient(160deg, #1e1509 0%, #180e07 100%)', border: '1px solid rgba(90,60,30,0.35)' }}>
+            {/* Paper texture top edge */}
+            <div className="absolute top-0 inset-x-8 h-px bg-gradient-to-r from-transparent via-gold/10 to-transparent pointer-events-none" />
+            <div className="h-full overflow-hidden flex flex-col p-5">
+              {activeTab === 'diario'        && <DiarioTab />}
+              {activeTab === 'jornal'        && <JornalTab />}
+              {activeTab === 'economia'      && <EconomiaTab />}
+              {activeTab === 'calendario'    && <CalendarioTab />}
+              {activeTab === 'contratos'     && <ContratosTab />}
+              {activeTab === 'livro'         && <LivroTab />}
+              {activeTab === 'prestigio'     && <PrestigioTab />}
+              {activeTab === 'administracao' && <AdministracaoTab />}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
