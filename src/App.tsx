@@ -6,6 +6,7 @@ import RanchMap from './components/RanchMap';
 import NewsPanel from './components/NewsPanel';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
+import { GameStateProvider } from './store/gameState';
 
 const HerdadePage: React.FC = () => (
   <>
@@ -85,9 +86,11 @@ const Layout: React.FC = () => {
 };
 
 const App: React.FC = () => (
-  <BrowserRouter>
-    <Layout />
-  </BrowserRouter>
+  <GameStateProvider>
+    <BrowserRouter>
+      <Layout />
+    </BrowserRouter>
+  </GameStateProvider>
 );
 
 export default App;
