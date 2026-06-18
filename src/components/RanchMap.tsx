@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameState } from '../store/gameState';
-import type { BuildingKey, BuildingNotification } from '../store/gameState';
+import type { BuildingKey, BuildingNotification, LocationId } from '../store/gameState';
 
 // ── Coming Soon overlay ───────────────────────────────────────────────────────
 
@@ -136,7 +136,7 @@ const RanchMap: React.FC = () => {
   const [hovered, setHovered] = useState<string | null>(null);
   const [comingSoon, setComingSoon] = useState<{ name: string; desc?: string } | null>(null);
   const navigate = useNavigate();
-  const { state, dismissNotification } = useGameState();
+  const { state, dismissNotification, setActiveLocation } = useGameState();
   const { notifications } = state;
 
   const hover = (key: string) => () => setHovered(key);
@@ -144,11 +144,13 @@ const RanchMap: React.FC = () => {
 
   const goToEscritorio = () => {
     dismissNotification('escritorio');
+    setActiveLocation('escritorio');
     navigate('/escritorio');
   };
 
   const showComingSoon = (name: string, key: BuildingKey, desc?: string) => {
     dismissNotification(key);
+    setActiveLocation(key as LocationId);
     setComingSoon({ name, desc });
   };
 
