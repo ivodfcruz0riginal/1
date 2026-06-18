@@ -23,6 +23,13 @@ export interface GameEvent {
   text: string;
 }
 
+export type BuildingKey = 'escritorio' | 'tentadero' | 'currais' | 'embarque';
+
+export interface BuildingNotification {
+  icon: string;
+  label: string;
+}
+
 export interface GameState {
   year: number;
   month: Month;
@@ -30,9 +37,12 @@ export interface GameState {
   eventLog: GameEvent[];
   economy: EconomyState;
   animals: Animal[];
+  notifications: Partial<Record<BuildingKey, BuildingNotification>>;
 }
 
-type GameAction = { type: 'ADVANCE_MONTH' };
+type GameAction =
+  | { type: 'ADVANCE_MONTH' }
+  | { type: 'DISMISS_NOTIFICATION'; building: BuildingKey };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -75,6 +85,19 @@ const EVENTS_POOL: string[] = [
   'Recebido relatório veterinário anual. Sem anomalias graves.',
   'Trabalhos de manutenção concluídos no tentadero.',
 ];
+
+// ── Notification pools ────────────────────────────────────────────────────────
+
+const ESCRITORIO_NOTIFICATIONS: BuildingNotification[] = [
+  { icon: '📰', label: 'Nova notícia' },
+  { icon: '💰', label: 'Atualização económica' },
+  { icon: '📬', label: 'Novo convite' },
+  { icon: '⚠️', label: 'Alerta veterinário' },
+];
+
+function pickNotification(pool: BuildingNotification[]): BuildingNotification {
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 // ── Reducer ──────────────────────────────────────────────────────────────────
 
@@ -120,6 +143,12 @@ function advanceMonthState(state: GameState): GameState {
 
   const newLog = [...newEvents, ...state.eventLog].slice(0, 20);
 
+  // Each month there's a 70% chance of a new Escritório notification
+  const newNotifications = { ...state.notifications };
+  if (Math.random() < 0.7) {
+    newNotifications.escritorio = pickNotification(ESCRITORIO_NOTIFICATIONS);
+  }
+
   return {
     year: nextYear,
     month: nextMonth,
@@ -127,6 +156,7 @@ function advanceMonthState(state: GameState): GameState {
     eventLog: newLog,
     economy: newEconomy,
     animals: newAnimals,
+    notifications: newNotifications,
   };
 }
 
@@ -134,6 +164,11 @@ function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'ADVANCE_MONTH':
       return advanceMonthState(state);
+    case 'DISMISS_NOTIFICATION': {
+      const notifications = { ...state.notifications };
+      delete notifications[action.building];
+      return { ...state, notifications };
+    }
     default:
       return state;
   }
@@ -155,6 +190,7 @@ const INITIAL_STATE: GameState = {
   ],
   economy: INITIAL_ECONOMY,
   animals: initialAnimals,
+  notifications: {},
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -162,6 +198,7 @@ const INITIAL_STATE: GameState = {
 interface GameStateContextValue {
   state: GameState;
   advanceMonth: () => void;
+  dismissNotification: (building: BuildingKey) => void;
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
@@ -170,9 +207,11 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
 
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
+  const dismissNotification = (building: BuildingKey) =>
+    dispatch({ type: 'DISMISS_NOTIFICATION', building });
 
   return (
-    <GameStateContext.Provider value={{ state, advanceMonth: advance }}>
+    <GameStateContext.Provider value={{ state, advanceMonth: advance, dismissNotification }}>
       {children}
     </GameStateContext.Provider>
   );

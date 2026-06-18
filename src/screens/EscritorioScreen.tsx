@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameState } from '../store/gameState';
 import { formatEuro, lastNMonths } from '../store/economyEngine';
@@ -6,7 +6,7 @@ import EconomyScreen from './EconomyScreen';
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
 
-type TabKey = 'diario' | 'jornal' | 'economia' | 'calendario' | 'convites' | 'livro' | 'estatisticas';
+type TabKey = 'diario' | 'jornal' | 'economia' | 'calendario' | 'convites' | 'contratos' | 'livro' | 'estatisticas';
 
 const TABS: { key: TabKey; icon: string; label: string }[] = [
   { key: 'diario',        icon: '📋', label: 'Diário' },
@@ -14,6 +14,7 @@ const TABS: { key: TabKey; icon: string; label: string }[] = [
   { key: 'economia',      icon: '💰', label: 'Economia' },
   { key: 'calendario',    icon: '📅', label: 'Calendário' },
   { key: 'convites',      icon: '✉️',  label: 'Convites' },
+  { key: 'contratos',     icon: '📜', label: 'Contratos' },
   { key: 'livro',         icon: '📖', label: 'Livro da Casa' },
   { key: 'estatisticas',  icon: '📊', label: 'Estatísticas' },
 ];
@@ -248,11 +249,53 @@ const EstatisticasTab: React.FC = () => {
   );
 };
 
+// ── Contratos tab ─────────────────────────────────────────────────────────────
+
+const CONTRATOS = [
+  { title: 'Fornecimento de feno — Cooperativa do Alentejo', value: '1.200€/mês', status: 'Ativo', expires: 'Dez 1985' },
+  { title: 'Serviços veterinários — Dr. António Ferreira', value: '800€/mês', status: 'Ativo', expires: 'Jun 1986' },
+  { title: 'Transporte de animais — Transportes Ibéricos', value: 'Por viagem', status: 'Ativo', expires: 'Mar 1986' },
+  { title: 'Seguro de efetivo — Seguradora Nacional', value: '2.400€/ano', status: 'Em renovação', expires: 'Abr 1985' },
+];
+
+const ContratosTab: React.FC = () => (
+  <div className="space-y-3 overflow-y-auto flex-1">
+    {CONTRATOS.map((c, i) => (
+      <div key={i} className="bg-leather-800/30 border border-leather-700/30 rounded-lg p-4 hover:border-gold/20 transition-colors">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-ivory/90 text-sm font-body truncate">{c.title}</p>
+            <div className="flex items-center gap-3 mt-1.5">
+              <span className="text-gold/70 text-xs font-body">{c.value}</span>
+              <span className="text-ivory/30 text-xs">·</span>
+              <span className="text-ivory/40 text-[10px] font-body">Expira: {c.expires}</span>
+            </div>
+          </div>
+          <span className={`text-[10px] font-body px-2 py-0.5 rounded-full border shrink-0 mt-0.5 ${
+            c.status === 'Ativo' ? 'border-emerald-500/40 text-emerald-400' : 'border-amber-500/40 text-amber-400'
+          }`}>
+            {c.status}
+          </span>
+        </div>
+      </div>
+    ))}
+    <div className="text-center py-4">
+      <p className="text-ivory/20 text-xs font-body">Gestão completa de contratos em breve</p>
+    </div>
+  </div>
+);
+
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 const EscritorioScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('diario');
   const navigate = useNavigate();
+  const { dismissNotification } = useGameState();
+
+  // Dismiss escritório notification when entering this screen
+  useEffect(() => {
+    dismissNotification('escritorio');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-leather-900">
@@ -304,6 +347,7 @@ const EscritorioScreen: React.FC = () => {
         )}
         {activeTab === 'calendario' && <CalendarioTab />}
         {activeTab === 'convites' && <ConvitesTab />}
+        {activeTab === 'contratos' && <ContratosTab />}
         {activeTab === 'livro' && <LivroTab />}
         {activeTab === 'estatisticas' && <EstatisticasTab />}
       </div>
