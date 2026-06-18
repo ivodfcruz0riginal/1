@@ -1,41 +1,47 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 
 interface SidebarItemProps {
   icon: React.ReactNode;
   label: string;
-  active?: boolean;
+  to: string;
   badge?: number;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, badge }) => (
-  <div className={`relative group ${active ? 'sidebar-item-active' : 'sidebar-item'}`}>
-    {/* Active indicator bar */}
-    {active && <div className="absolute left-0 top-0 bottom-0 w-1 bg-gold rounded-r"></div>}
-
-    <span className="text-lg relative z-10">{icon}</span>
-    <span className="flex-1 font-body text-sm tracking-wide relative z-10">{label}</span>
-    {badge !== undefined && (
-      <span className="bg-gold/25 text-gold text-[10px] px-2 py-0.5 rounded-full font-semibold border border-gold/30">
-        {badge}
-      </span>
+const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, to, badge }) => (
+  <NavLink
+    to={to}
+    className={({ isActive }) =>
+      `relative group ${isActive ? 'sidebar-item-active' : 'sidebar-item'} flex items-center gap-3 px-4 py-3 transition-all duration-200 cursor-pointer rounded-md mx-2`
+    }
+  >
+    {({ isActive }) => (
+      <>
+        {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-gold rounded-r"></div>}
+        <span className="text-lg relative z-10">{icon}</span>
+        <span className="flex-1 font-body text-sm tracking-wide relative z-10">{label}</span>
+        {badge !== undefined && (
+          <span className="bg-gold/25 text-gold text-[10px] px-2 py-0.5 rounded-full font-semibold border border-gold/30">
+            {badge}
+          </span>
+        )}
+        <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md pointer-events-none"></div>
+      </>
     )}
-
-    {/* Hover glow effect */}
-    <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md pointer-events-none"></div>
-  </div>
+  </NavLink>
 );
 
 const Sidebar: React.FC = () => {
   const menuItems = [
-    { icon: '🏘️', label: 'Herdade', active: true },
-    { icon: '🐂', label: 'Efetivo', badge: 42 },
-    { icon: '❤️', label: 'Reprodução' },
-    { icon: '🎯', label: 'Tentas' },
-    { icon: '🏇', label: 'Corridas' },
-    { icon: '📰', label: 'Jornal', badge: 3 },
-    { icon: '📖', label: 'Livro da Casa' },
-    { icon: '💰', label: 'Economia' },
-    { icon: '⚙️', label: 'Definições' },
+    { icon: '🏘️', label: 'Herdade', to: '/herdade' },
+    { icon: '🐂', label: 'Efetivo', to: '/efetivo', badge: 42 },
+    { icon: '❤️', label: 'Reprodução', to: '/reproducao' },
+    { icon: '🎯', label: 'Tentas', to: '/tentas' },
+    { icon: '🏇', label: 'Corridas', to: '/corridas' },
+    { icon: '📰', label: 'Jornal', to: '/jornal', badge: 3 },
+    { icon: '📖', label: 'Livro da Casa', to: '/livro-da-casa' },
+    { icon: '💰', label: 'Economia', to: '/economia' },
+    { icon: '⚙️', label: 'Definições', to: '/definicoes' },
   ];
 
   return (
@@ -44,7 +50,6 @@ const Sidebar: React.FC = () => {
       <div className="p-5 border-b-2 border-gold/20">
         <div className="flex items-center justify-center">
           <div className="text-center relative">
-            {/* Decorative frame */}
             <div className="absolute -inset-3 border border-gold/20 rounded-lg pointer-events-none"></div>
             <div className="absolute -top-2 -left-2 w-2 h-2 border-t border-l border-gold/40"></div>
             <div className="absolute -top-2 -right-2 w-2 h-2 border-t border-r border-gold/40"></div>
@@ -54,7 +59,6 @@ const Sidebar: React.FC = () => {
             <h1 className="font-display text-2xl text-gold tracking-[0.2em]">HERANÇA</h1>
             <h2 className="font-display text-xl text-gold-light tracking-[0.15em]">BRAVA</h2>
 
-            {/* Decorative line */}
             <div className="flex items-center justify-center gap-2 mt-2">
               <div className="w-8 h-px bg-gradient-to-r from-transparent to-gold/60"></div>
               <div className="w-1.5 h-1.5 bg-gold/40 rotate-45"></div>
@@ -65,13 +69,13 @@ const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 overflow-y-auto px-2">
-        {menuItems.map((item, index) => (
+      <nav className="flex-1 py-4 overflow-y-auto">
+        {menuItems.map((item) => (
           <SidebarItem
-            key={index}
+            key={item.to}
             icon={item.icon}
             label={item.label}
-            active={item.active}
+            to={item.to}
             badge={item.badge}
           />
         ))}
