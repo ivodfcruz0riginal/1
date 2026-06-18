@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface MapLabelProps {
   title: string;
@@ -69,6 +70,7 @@ const BullSilhouette: React.FC<{ size?: 'small' | 'medium' | 'large'; style?: Re
 
 const RanchMap: React.FC = () => {
   const [hoveredArea, setHoveredArea] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   return (
     <div className="relative h-full overflow-hidden">
@@ -319,9 +321,10 @@ const RanchMap: React.FC = () => {
 
           {/* ESCRITÓRIO - Main Building */}
           <div
-            className="absolute top-4 right-20 w-28 h-20"
+            className={`absolute top-4 right-20 w-28 h-20 cursor-pointer transition-transform duration-200 ${hoveredArea === 'escritorio' ? 'scale-105' : ''}`}
             onMouseEnter={() => setHoveredArea('escritorio')}
             onMouseLeave={() => setHoveredArea(null)}
+            onClick={() => navigate('/escritorio')}
           >
             {/* Building shadow */}
             <div className="absolute inset-0 bg-black/30 translate-y-2 translate-x-1 rounded"></div>
@@ -415,8 +418,9 @@ const RanchMap: React.FC = () => {
           />
           <MapLabel
             title="Escritório"
-            subtitle="Gestão"
+            subtitle="Clique para gerir"
             position={{ top: '2%', right: '12%' }}
+            onClick={() => navigate('/escritorio')}
           />
           <MapLabel
             title="Currais"

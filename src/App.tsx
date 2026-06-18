@@ -3,10 +3,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import RanchMap from './components/RanchMap';
-import NewsPanel from './components/NewsPanel';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
 import EconomyScreen from './screens/EconomyScreen';
+import EscritorioScreen from './screens/EscritorioScreen';
 import { GameStateProvider } from './store/gameState';
 
 const HerdadePage: React.FC = () => (
@@ -65,6 +65,7 @@ const Layout: React.FC = () => {
           <Routes>
             <Route path="/" element={<Navigate to="/herdade" replace />} />
             <Route path="/herdade" element={<HerdadePage />} />
+            <Route path="/escritorio" element={<EscritorioScreen />} />
             <Route path="/efetivo" element={<EfetivoScreen />} />
             <Route path="/reproducao" element={<PlaceholderPage title="Reprodução" subtitle="Programa de reprodução e genética" />} />
             <Route path="/tentas" element={<PlaceholderPage title="Tentas" subtitle="Calendário e resultados das tentas" />} />
@@ -74,12 +75,6 @@ const Layout: React.FC = () => {
             <Route path="/economia" element={<EconomyScreen />} />
             <Route path="/definicoes" element={<PlaceholderPage title="Definições" subtitle="Configurações do jogo" />} />
           </Routes>
-        </div>
-
-        <div className="h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent"></div>
-
-        <div className="h-[200px] p-4 bg-leather-900/98 border-t border-leather-700/40">
-          <NewsPanel />
         </div>
       </div>
     </div>
