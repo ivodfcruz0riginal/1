@@ -4,6 +4,23 @@ import {
   applyMonthToEconomy,
   type EconomyState,
 } from './economyEngine';
+import { applyMonthlyGrowth } from '../utils/animalGrowth';
+import { animals as initialAnimals } from '../data/animals';
+import type { Animal } from '../types/animal';
+import { GREETING_DIALOGUE, pickMonthlyDialogue } from '../data/maioralDialogues';
+import type { DialogueTemplate } from '../data/maioralDialogues';
+import { generateDailyTasks } from '../data/dailyTasks';
+import type { DailyTask } from '../data/dailyTasks';
+import { OPENING_DECISION, pickDecision, nextDecisionInstanceId } from '../data/decisions';
+import type { Decision, DecisionCategory } from '../data/decisions';
+import { INITIAL_LOCATIONS } from '../data/locations';
+import type { Location, LocationId, LocationCondition, LocationNotification } from '../types/location';
+import {
+  updateLocationCondition,
+  addLocationNotification,
+  clearLocationNotification,
+  updateLocationOccupation,
+} from '../services/locationService';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,15 +37,66 @@ export interface GameEvent {
   text: string;
 }
 
+export type BuildingKey = 'escritorio' | 'tentadero' | 'currais' | 'embarque' | 'cercado_norte' | 'cercado_sul' | 'casa';
+
+export interface BuildingNotification {
+  icon: string;
+  label: string;
+}
+
+export type { DialogueTemplate as MaioralDialogue };
+
+export interface DialogueRecord {
+  dialogueId: string;
+  choice: string;
+  month: Month;
+  year: number;
+}
+
+export type { DailyTask };
+export type { Decision, DecisionCategory };
+export type { Location, LocationId, LocationCondition, LocationNotification };
+
+export interface DecisionRecord {
+  instanceId: string;
+  decisionId: string;
+  title: string;
+  category: DecisionCategory;
+  choice: string;
+  month: Month;
+  year: number;
+  result: string | null;
+}
+
 export interface GameState {
   year: number;
   month: Month;
   season: Season;
   eventLog: GameEvent[];
   economy: EconomyState;
+  animals: Animal[];
+  notifications: Partial<Record<BuildingKey, BuildingNotification>>;
+  pendingDialogue: DialogueTemplate | null;
+  dialogueHistory: DialogueRecord[];
+  dailyTasks: DailyTask[];
+  pendingDecision: Decision | null;
+  decisionHistory: DecisionRecord[];
+  locations: Location[];
+  activeLocationId: LocationId | null;
 }
 
-type GameAction = { type: 'ADVANCE_MONTH' };
+type GameAction =
+  | { type: 'ADVANCE_MONTH' }
+  | { type: 'DISMISS_NOTIFICATION'; building: BuildingKey }
+  | { type: 'ANSWER_DIALOGUE'; choice: string }
+  | { type: 'COMPLETE_TASK'; id: string }
+  | { type: 'IGNORE_TASK'; id: string }
+  | { type: 'RESOLVE_DECISION'; choice: string }
+  | { type: 'SET_ACTIVE_LOCATION'; id: LocationId | null }
+  | { type: 'UPDATE_LOCATION_CONDITION'; id: LocationId; condition: LocationCondition }
+  | { type: 'ADD_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
+  | { type: 'CLEAR_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
+  | { type: 'UPDATE_LOCATION_OCCUPATION'; id: LocationId; occupation: number };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -72,6 +140,25 @@ const EVENTS_POOL: string[] = [
   'Trabalhos de manutenção concluídos no tentadero.',
 ];
 
+// ── Notification pools ────────────────────────────────────────────────────────
+
+const ESCRITORIO_NOTIFICATIONS: BuildingNotification[] = [
+  { icon: '📰', label: 'Nova notícia' },
+  { icon: '💰', label: 'Atualização económica' },
+  { icon: '📬', label: 'Novo convite' },
+  { icon: '📜', label: 'Contrato pendente' },
+];
+
+const CERCADO_NOTIFICATIONS: BuildingNotification[] = [
+  { icon: '🐂', label: 'Animais activos' },
+  { icon: '⚠️', label: 'Alerta veterinário' },
+  { icon: '🐂', label: 'Nascimentos' },
+];
+
+function pickNotification(pool: BuildingNotification[]): BuildingNotification {
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 // ── Reducer ──────────────────────────────────────────────────────────────────
 
 let _eventIdCounter = 0;
@@ -101,10 +188,32 @@ function advanceMonthState(state: GameState): GameState {
     nextSeason,
   );
 
+  const { animals: newAnimals, events: animalEvents } = applyMonthlyGrowth(
+    state.animals,
+    nextMonth,
+    nextYear,
+    nextSeason,
+  );
+
   const newEvents: GameEvent[] = [ranchEvent];
   if (economicEvent) newEvents.push(economicEvent);
+  animalEvents.forEach(ev => {
+    newEvents.push({ id: nextId(), month: nextMonth, year: nextYear, text: ev.text });
+  });
 
   const newLog = [...newEvents, ...state.eventLog].slice(0, 20);
+
+  // Each month: 70% chance of escritório notification, 30% chance per cercado
+  const newNotifications = { ...state.notifications };
+  if (Math.random() < 0.7) {
+    newNotifications.escritorio = pickNotification(ESCRITORIO_NOTIFICATIONS);
+  }
+  if (Math.random() < 0.3) {
+    newNotifications.cercado_norte = pickNotification(CERCADO_NOTIFICATIONS);
+  }
+  if (Math.random() < 0.3) {
+    newNotifications.cercado_sul = pickNotification(CERCADO_NOTIFICATIONS);
+  }
 
   return {
     year: nextYear,
@@ -112,6 +221,17 @@ function advanceMonthState(state: GameState): GameState {
     season: nextSeason,
     eventLog: newLog,
     economy: newEconomy,
+    animals: newAnimals,
+    notifications: newNotifications,
+    pendingDialogue: pickMonthlyDialogue(),
+    dialogueHistory: state.dialogueHistory,
+    dailyTasks: generateDailyTasks(),
+    pendingDecision: Math.random() < 0.55
+      ? pickDecision(state.decisionHistory.slice(0, 3).map(r => r.decisionId))
+      : null,
+    decisionHistory: state.decisionHistory,
+    locations: state.locations,
+    activeLocationId: state.activeLocationId,
   };
 }
 
@@ -119,6 +239,69 @@ function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'ADVANCE_MONTH':
       return advanceMonthState(state);
+    case 'DISMISS_NOTIFICATION': {
+      const notifications = { ...state.notifications };
+      delete notifications[action.building];
+      return { ...state, notifications };
+    }
+    case 'ANSWER_DIALOGUE': {
+      if (!state.pendingDialogue) return state;
+      const record: DialogueRecord = {
+        dialogueId: state.pendingDialogue.id,
+        choice: action.choice,
+        month: state.month,
+        year: state.year,
+      };
+      return {
+        ...state,
+        pendingDialogue: null,
+        dialogueHistory: [record, ...state.dialogueHistory],
+      };
+    }
+    case 'COMPLETE_TASK': {
+      return {
+        ...state,
+        dailyTasks: state.dailyTasks.map(t =>
+          t.id === action.id ? { ...t, status: 'completed' } : t
+        ),
+      };
+    }
+    case 'IGNORE_TASK': {
+      return {
+        ...state,
+        dailyTasks: state.dailyTasks.map(t =>
+          t.id === action.id ? { ...t, status: 'ignored' } : t
+        ),
+      };
+    }
+    case 'RESOLVE_DECISION': {
+      if (!state.pendingDecision) return state;
+      const record: DecisionRecord = {
+        instanceId: nextDecisionInstanceId(),
+        decisionId: state.pendingDecision.id,
+        title: state.pendingDecision.title,
+        category: state.pendingDecision.category,
+        choice: action.choice,
+        month: state.month,
+        year: state.year,
+        result: null,
+      };
+      return {
+        ...state,
+        pendingDecision: null,
+        decisionHistory: [record, ...state.decisionHistory],
+      };
+    }
+    case 'SET_ACTIVE_LOCATION':
+      return { ...state, activeLocationId: action.id };
+    case 'UPDATE_LOCATION_CONDITION':
+      return { ...state, locations: updateLocationCondition(state.locations, action.id, action.condition) };
+    case 'ADD_LOCATION_NOTIFICATION':
+      return { ...state, locations: addLocationNotification(state.locations, action.id, action.notification) };
+    case 'CLEAR_LOCATION_NOTIFICATION':
+      return { ...state, locations: clearLocationNotification(state.locations, action.id, action.notification) };
+    case 'UPDATE_LOCATION_OCCUPATION':
+      return { ...state, locations: updateLocationOccupation(state.locations, action.id, action.occupation) };
     default:
       return state;
   }
@@ -139,6 +322,15 @@ const INITIAL_STATE: GameState = {
     },
   ],
   economy: INITIAL_ECONOMY,
+  animals: initialAnimals,
+  notifications: {},
+  pendingDialogue: GREETING_DIALOGUE,
+  dialogueHistory: [],
+  dailyTasks: generateDailyTasks(),
+  pendingDecision: OPENING_DECISION,
+  decisionHistory: [],
+  locations: INITIAL_LOCATIONS,
+  activeLocationId: null,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -146,6 +338,16 @@ const INITIAL_STATE: GameState = {
 interface GameStateContextValue {
   state: GameState;
   advanceMonth: () => void;
+  dismissNotification: (building: BuildingKey) => void;
+  answerDialogue: (choice: string) => void;
+  completeTask: (id: string) => void;
+  ignoreTask: (id: string) => void;
+  resolveDecision: (choice: string) => void;
+  setActiveLocation: (id: LocationId | null) => void;
+  updateLocationCondition: (id: LocationId, condition: LocationCondition) => void;
+  addLocationNotification: (id: LocationId, notification: LocationNotification) => void;
+  clearLocationNotification: (id: LocationId, notification: LocationNotification) => void;
+  updateLocationOccupation: (id: LocationId, occupation: number) => void;
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
@@ -154,9 +356,34 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
 
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
+  const dismissNotification = (building: BuildingKey) =>
+    dispatch({ type: 'DISMISS_NOTIFICATION', building });
+  const answerDialogue = (choice: string) =>
+    dispatch({ type: 'ANSWER_DIALOGUE', choice });
+  const completeTask = (id: string) =>
+    dispatch({ type: 'COMPLETE_TASK', id });
+  const ignoreTask = (id: string) =>
+    dispatch({ type: 'IGNORE_TASK', id });
+  const resolveDecision = (choice: string) =>
+    dispatch({ type: 'RESOLVE_DECISION', choice });
+  const setActiveLocation = (id: LocationId | null) =>
+    dispatch({ type: 'SET_ACTIVE_LOCATION', id });
+  const updateLocationCondition = (id: LocationId, condition: LocationCondition) =>
+    dispatch({ type: 'UPDATE_LOCATION_CONDITION', id, condition });
+  const addLocationNotification = (id: LocationId, notification: LocationNotification) =>
+    dispatch({ type: 'ADD_LOCATION_NOTIFICATION', id, notification });
+  const clearLocationNotification = (id: LocationId, notification: LocationNotification) =>
+    dispatch({ type: 'CLEAR_LOCATION_NOTIFICATION', id, notification });
+  const updateLocationOccupation = (id: LocationId, occupation: number) =>
+    dispatch({ type: 'UPDATE_LOCATION_OCCUPATION', id, occupation });
 
   return (
-    <GameStateContext.Provider value={{ state, advanceMonth: advance }}>
+    <GameStateContext.Provider value={{
+      state, advanceMonth: advance, dismissNotification, answerDialogue,
+      completeTask, ignoreTask, resolveDecision,
+      setActiveLocation, updateLocationCondition, addLocationNotification,
+      clearLocationNotification, updateLocationOccupation,
+    }}>
       {children}
     </GameStateContext.Provider>
   );

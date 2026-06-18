@@ -34,13 +34,11 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, to, badge }) => 
 const Sidebar: React.FC = () => {
   const menuItems = [
     { icon: '🏘️', label: 'Herdade', to: '/herdade' },
+    { icon: '🏛️', label: 'Escritório', to: '/escritorio' },
     { icon: '🐂', label: 'Efetivo', to: '/efetivo', badge: 42 },
     { icon: '❤️', label: 'Reprodução', to: '/reproducao' },
     { icon: '🎯', label: 'Tentas', to: '/tentas' },
     { icon: '🏇', label: 'Corridas', to: '/corridas' },
-    { icon: '📰', label: 'Jornal', to: '/jornal', badge: 3 },
-    { icon: '📖', label: 'Livro da Casa', to: '/livro-da-casa' },
-    { icon: '💰', label: 'Economia', to: '/economia' },
     { icon: '⚙️', label: 'Definições', to: '/definicoes' },
   ];
 

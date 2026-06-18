@@ -5,7 +5,11 @@ export type AnimalCategory =
   | 'Vaca'
   | 'Novilha'
   | 'Macho de Corrida'
-  | 'Cabresto';
+  | 'Cabresto'
+  | 'Bezerro'
+  | 'Bezerra'
+  | 'Utrero'
+  | 'Novilho';
 
 export type AnimalStatus =
   | 'Ativo'
@@ -13,6 +17,13 @@ export type AnimalStatus =
   | 'Reformado'
   | 'Vendido'
   | 'Morto';
+
+export type HealthStatus =
+  | 'Excelente'
+  | 'Bom'
+  | 'Regular'
+  | 'Fraco'
+  | 'Doente';
 
 export type CoatColor =
   | 'Negro'
@@ -31,13 +42,22 @@ export type HornType =
   | 'Brocho'
   | 'Astillado';
 
+export type Month =
+  | 'Janeiro' | 'Fevereiro' | 'Março' | 'Abril' | 'Maio' | 'Junho'
+  | 'Julho' | 'Agosto' | 'Setembro' | 'Outubro' | 'Novembro' | 'Dezembro';
+
 export interface Animal {
   id: string;
   name: string;
   sex: AnimalSex;
+  // Legacy integer age in full years (kept for backwards compat, derived from exactAgeMonths)
   age: number;
   birthYear: number;
+  birthMonth: Month;
+  exactAgeMonths: number;
+  ageYears: number;
   weight: number;
+  health: HealthStatus;
   coat: CoatColor;
   hornType: HornType;
   bloodline: string;

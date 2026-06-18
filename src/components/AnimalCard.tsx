@@ -1,5 +1,6 @@
 import React from 'react';
-import { Animal, AnimalCategory } from '../types/animal';
+import { Animal, AnimalCategory, HealthStatus } from '../types/animal';
+import { formatAge } from '../utils/animalGrowth';
 
 const coatColors: Record<string, string> = {
   'Negro': '#1a1a2e',
@@ -17,6 +18,22 @@ const categoryBadgeColors: Record<AnimalCategory, string> = {
   'Novilha': 'bg-emerald-900/30 text-emerald-300 border-emerald-500/30',
   'Macho de Corrida': 'bg-amber-900/30 text-amber-300 border-amber-500/30',
   'Cabresto': 'bg-leather-700/50 text-ivory/60 border-leather-500/30',
+  'Bezerro': 'bg-sky-900/30 text-sky-300 border-sky-500/30',
+  'Bezerra': 'bg-sky-900/30 text-sky-300 border-sky-500/30',
+  'Novilho': 'bg-teal-900/30 text-teal-300 border-teal-500/30',
+  'Utrero': 'bg-orange-900/30 text-orange-300 border-orange-500/30',
+};
+
+const categoryShortLabel: Record<AnimalCategory, string> = {
+  'Semental': 'Semental',
+  'Vaca': 'Vaca',
+  'Novilha': 'Novilha',
+  'Macho de Corrida': 'Corrida',
+  'Cabresto': 'Cabresto',
+  'Bezerro': 'Bezerro',
+  'Bezerra': 'Bezerra',
+  'Novilho': 'Novilho',
+  'Utrero': 'Utrero',
 };
 
 const statusColors: Record<string, string> = {
@@ -25,6 +42,14 @@ const statusColors: Record<string, string> = {
   'Reformado': 'bg-leather-500',
   'Vendido': 'bg-blue-400',
   'Morto': 'bg-red-800',
+};
+
+const healthColors: Record<HealthStatus, string> = {
+  'Excelente': 'text-emerald-400',
+  'Bom': 'text-green-400',
+  'Regular': 'text-amber-400',
+  'Fraco': 'text-orange-400',
+  'Doente': 'text-red-400',
 };
 
 interface StatBarProps {
@@ -64,7 +89,6 @@ const AnimalCard: React.FC<AnimalCardProps> = ({ animal, isSelected, onClick }) 
           : 'border-leather-600/50 bg-leather-800/50 hover:border-gold/50 hover:bg-leather-700/40'
         }`}
     >
-      {/* Selected indicator */}
       {isSelected && (
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gold" />
       )}
@@ -82,9 +106,7 @@ const AnimalCard: React.FC<AnimalCardProps> = ({ animal, isSelected, onClick }) 
             {animal.sex === 'Macho' ? '🐂' : '🐄'}
           </span>
         </div>
-        {/* Status dot */}
         <div className={`absolute top-2 right-2 w-2.5 h-2.5 rounded-full ${statusColors[animal.status]}`} />
-        {/* Fought badge */}
         {animal.hasFought && (
           <div className="absolute top-2 left-2 bg-red-900/70 border border-red-600/50 rounded px-1 py-0.5">
             <span className="text-red-300 text-[9px] font-body uppercase tracking-wider">Lidado</span>
@@ -104,14 +126,18 @@ const AnimalCard: React.FC<AnimalCardProps> = ({ animal, isSelected, onClick }) 
             {animal.name}
           </h3>
           <span className={`text-[10px] px-1.5 py-0.5 rounded border shrink-0 font-body ${categoryBadgeColors[animal.category]}`}>
-            {animal.category === 'Macho de Corrida' ? 'Corrida' : animal.category}
+            {categoryShortLabel[animal.category]}
           </span>
         </div>
 
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-ivory/50 text-[11px] font-body">{animal.age} anos</span>
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-ivory/50 text-[11px] font-body">{formatAge(animal.exactAgeMonths)}</span>
           <span className="text-leather-500">·</span>
           <span className="text-ivory/50 text-[11px] font-body">{animal.weight}kg</span>
+        </div>
+
+        <div className="flex items-center gap-2 mb-2">
+          <span className={`text-[10px] font-body ${healthColors[animal.health]}`}>{animal.health}</span>
           <span className="text-leather-500">·</span>
           <span className="text-ivory/40 text-[11px] font-body truncate">{animal.bloodline}</span>
         </div>

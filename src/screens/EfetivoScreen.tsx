@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { animals as allAnimals } from '../data/animals';
 import { Animal, AnimalCategory } from '../types/animal';
+import { useGameState } from '../store/gameState';
 import AnimalCard from '../components/AnimalCard';
 import AnimalDetailPanel from '../components/AnimalDetailPanel';
 
@@ -44,7 +44,7 @@ function applyFilter(animal: Animal, filter: FilterKey): boolean {
     case 'femeas': return animal.sex === 'Fêmea';
     case 'sementais': return animal.category === 'Semental';
     case 'vacas': return animal.category === 'Vaca';
-    case 'novilhas': return animal.category === 'Novilha';
+    case 'novilhas': return animal.category === 'Novilha' || animal.category === 'Bezerra' || animal.category === 'Novilho';
     case 'prontos': return animal.category === 'Macho de Corrida' && animal.status === 'Ativo';
     case 'aprovados': return animal.approvedForBreeding;
     case 'rejeitados': return animal.rejected;
@@ -54,23 +54,17 @@ function applyFilter(animal: Animal, filter: FilterKey): boolean {
 function applySort(a: Animal, b: Animal, sort: SortKey): number {
   switch (sort) {
     case 'name': return a.name.localeCompare(b.name);
-    case 'age': return b.age - a.age;
+    case 'age': return b.exactAgeMonths - a.exactAgeMonths;
     case 'bravery': return b.bravery - a.bravery;
     case 'weight': return b.weight - a.weight;
     case 'bloodline': return a.bloodline.localeCompare(b.bloodline);
   }
 }
 
-const categoryCounters: Record<AnimalCategory | 'total', number> = {
-  total: allAnimals.length,
-  Semental: allAnimals.filter(a => a.category === 'Semental').length,
-  Vaca: allAnimals.filter(a => a.category === 'Vaca').length,
-  Novilha: allAnimals.filter(a => a.category === 'Novilha').length,
-  'Macho de Corrida': allAnimals.filter(a => a.category === 'Macho de Corrida').length,
-  Cabresto: allAnimals.filter(a => a.category === 'Cabresto').length,
-};
-
 const EfetivoScreen: React.FC = () => {
+  const { state } = useGameState();
+  const allAnimals = state.animals;
+
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('todos');
   const [sortKey, setSortKey] = useState<SortKey>('name');
@@ -80,14 +74,23 @@ const EfetivoScreen: React.FC = () => {
     const map: Record<string, Animal> = {};
     allAnimals.forEach(a => { map[a.id] = a; });
     return map;
-  }, []);
+  }, [allAnimals]);
+
+  const categoryCounters = useMemo(() => ({
+    total: allAnimals.length,
+    Semental: allAnimals.filter(a => a.category === 'Semental').length,
+    Vaca: allAnimals.filter(a => a.category === 'Vaca').length,
+    Novilha: allAnimals.filter(a => a.category === 'Novilha' || a.category === 'Bezerra' || a.category === 'Novilho').length,
+    'Macho de Corrida': allAnimals.filter(a => a.category === 'Macho de Corrida' || a.category === 'Utrero').length,
+    Cabresto: allAnimals.filter(a => a.category === 'Cabresto').length,
+  } satisfies Record<AnimalCategory | 'total' | 'Novilha', number>), [allAnimals]);
 
   const filtered = useMemo(() => {
     return allAnimals
       .filter(a => applyFilter(a, activeFilter))
       .filter(a => a.name.toLowerCase().includes(search.toLowerCase()))
       .sort((a, b) => applySort(a, b, sortKey));
-  }, [search, activeFilter, sortKey]);
+  }, [allAnimals, search, activeFilter, sortKey]);
 
   const selected = selectedId ? animalById[selectedId] : null;
 

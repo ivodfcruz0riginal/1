@@ -3,27 +3,19 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import RanchMap from './components/RanchMap';
-import NewsPanel from './components/NewsPanel';
+import MaioralDialogue from './components/MaioralDialogue';
+import TasksPanel from './components/TasksPanel';
+import DecisionWindow from './components/DecisionWindow';
+import LocationDetailPanel from './components/LocationDetailPanel';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
 import EconomyScreen from './screens/EconomyScreen';
+import EscritorioScreen from './screens/EscritorioScreen';
 import { GameStateProvider } from './store/gameState';
 
 const HerdadePage: React.FC = () => (
   <>
-    {/* Top info overlay */}
-    <div className="absolute top-5 left-6 z-20">
-      <div className="relative bg-leather-900/95 border-2 border-gold/40 rounded-lg px-6 py-4 shadow-2xl backdrop-blur-sm">
-        <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-gold/60"></div>
-        <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-gold/60"></div>
-        <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-gold/60"></div>
-        <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-gold/60"></div>
-        <h2 className="font-display text-2xl text-gold tracking-widest">HERDADE DA FERRARIA</h2>
-        <p className="text-ivory/60 text-sm font-body mt-1 tracking-wide">Alentejo, Portugal • 1.250 hectares</p>
-      </div>
-    </div>
-
-    {/* Right: Weather & Time */}
+    {/* Weather & Time — top right */}
     <div className="absolute top-5 right-6 z-20 flex gap-3">
       <div className="bg-leather-900/90 border border-gold/30 rounded-lg px-5 py-3 shadow-xl backdrop-blur-sm">
         <p className="text-ivory/50 text-xs font-body uppercase tracking-wider">Condições</p>
@@ -41,6 +33,9 @@ const HerdadePage: React.FC = () => (
     </div>
 
     <RanchMap />
+    <TasksPanel />
+    <LocationDetailPanel />
+    <MaioralDialogue />
   </>
 );
 
@@ -65,6 +60,7 @@ const Layout: React.FC = () => {
           <Routes>
             <Route path="/" element={<Navigate to="/herdade" replace />} />
             <Route path="/herdade" element={<HerdadePage />} />
+            <Route path="/escritorio" element={<EscritorioScreen />} />
             <Route path="/efetivo" element={<EfetivoScreen />} />
             <Route path="/reproducao" element={<PlaceholderPage title="Reprodução" subtitle="Programa de reprodução e genética" />} />
             <Route path="/tentas" element={<PlaceholderPage title="Tentas" subtitle="Calendário e resultados das tentas" />} />
@@ -75,13 +71,10 @@ const Layout: React.FC = () => {
             <Route path="/definicoes" element={<PlaceholderPage title="Definições" subtitle="Configurações do jogo" />} />
           </Routes>
         </div>
-
-        <div className="h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent"></div>
-
-        <div className="h-[200px] p-4 bg-leather-900/98 border-t border-leather-700/40">
-          <NewsPanel />
-        </div>
       </div>
+
+      {/* Decision Window — global, floats above all screens */}
+      <DecisionWindow />
     </div>
   );
 };
