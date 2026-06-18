@@ -6,6 +6,7 @@ import RanchMap from './components/RanchMap';
 import NewsPanel from './components/NewsPanel';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
+import EconomyScreen from './screens/EconomyScreen';
 import { GameStateProvider } from './store/gameState';
 
 const HerdadePage: React.FC = () => (
@@ -70,7 +71,7 @@ const Layout: React.FC = () => {
             <Route path="/corridas" element={<PlaceholderPage title="Corridas" subtitle="Histórico e agenda de corridas" />} />
             <Route path="/jornal" element={<PlaceholderPage title="Jornal" subtitle="Notícias e eventos da herdade" />} />
             <Route path="/livro-da-casa" element={<PlaceholderPage title="Livro da Casa" subtitle="Registo histórico e genealógico" />} />
-            <Route path="/economia" element={<PlaceholderPage title="Economia" subtitle="Gestão financeira da herdade" />} />
+            <Route path="/economia" element={<EconomyScreen />} />
             <Route path="/definicoes" element={<PlaceholderPage title="Definições" subtitle="Configurações do jogo" />} />
           </Routes>
         </div>

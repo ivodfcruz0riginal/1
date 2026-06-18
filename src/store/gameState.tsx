@@ -1,4 +1,9 @@
 import React, { createContext, useContext, useReducer } from 'react';
+import {
+  INITIAL_ECONOMY,
+  applyMonthToEconomy,
+  type EconomyState,
+} from './economyEngine';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +25,7 @@ export interface GameState {
   month: Month;
   season: Season;
   eventLog: GameEvent[];
+  economy: EconomyState;
 }
 
 type GameAction = { type: 'ADVANCE_MONTH' };
@@ -74,33 +80,45 @@ function nextId(): string {
   return `evt-${++_eventIdCounter}-${Date.now()}`;
 }
 
-function randomEvent(month: Month, year: number): GameEvent {
+function randomRanchEvent(month: Month, year: number): GameEvent {
   const text = EVENTS_POOL[Math.floor(Math.random() * EVENTS_POOL.length)];
   return { id: nextId(), month, year, text };
 }
 
-function advanceMonth(state: GameState): GameState {
+function advanceMonthState(state: GameState): GameState {
   const currentIdx = MONTHS.indexOf(state.month);
   const nextIdx = (currentIdx + 1) % 12;
   const nextMonth = MONTHS[nextIdx];
   const nextYear = nextIdx === 0 ? state.year + 1 : state.year;
   const nextSeason = SEASON_MAP[nextMonth];
 
-  const newEvent = randomEvent(nextMonth, nextYear);
-  const newLog = [newEvent, ...state.eventLog].slice(0, 20);
+  const ranchEvent = randomRanchEvent(nextMonth, nextYear);
+
+  const { economy: newEconomy, economicEvent } = applyMonthToEconomy(
+    state.economy,
+    nextMonth,
+    nextYear,
+    nextSeason,
+  );
+
+  const newEvents: GameEvent[] = [ranchEvent];
+  if (economicEvent) newEvents.push(economicEvent);
+
+  const newLog = [...newEvents, ...state.eventLog].slice(0, 20);
 
   return {
     year: nextYear,
     month: nextMonth,
     season: nextSeason,
     eventLog: newLog,
+    economy: newEconomy,
   };
 }
 
 function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'ADVANCE_MONTH':
-      return advanceMonth(state);
+      return advanceMonthState(state);
     default:
       return state;
   }
@@ -120,6 +138,7 @@ const INITIAL_STATE: GameState = {
       text: 'A Herdade da Ferraria inicia uma nova época. Que seja próspera.',
     },
   ],
+  economy: INITIAL_ECONOMY,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────

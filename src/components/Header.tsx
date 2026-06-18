@@ -1,6 +1,7 @@
 import React from 'react';
 import { useGameState } from '../store/gameState';
 import type { Season } from '../store/gameState';
+import { formatEuro } from '../store/economyEngine';
 
 interface StatBadgeProps {
   icon: string;
@@ -81,7 +82,7 @@ const Header: React.FC = () => {
         {/* Right: Stats */}
         <div className="flex items-center gap-3">
           <StatBadge icon="👑" value="250" label="Prestígio" />
-          <StatBadge icon="💶" value="100.000€" label="Tesouraria" highlight />
+          <StatBadge icon="💶" value={formatEuro(state.economy.treasury)} label="Tesouraria" highlight />
           <StatBadge icon="🐂" value="42" label="Efetivo" />
         </div>
       </div>
