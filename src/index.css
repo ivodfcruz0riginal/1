@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Crimson Text', serif;
+  }
+
+  body {
+    @apply bg-leather-900 text-ivory;
+  }
+}
+
+@layer components {
+  .card-leather {
+    @apply rounded-lg shadow-card;
+    background-color: rgba(42, 32, 24, 0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(74, 53, 40, 0.5);
+  }
+
+  .card-parchment {
+    @apply rounded-lg shadow-premium;
+    border: 2px solid rgba(201, 162, 39, 0.3);
+    background: linear-gradient(135deg, #faf8f0 0%, #e8dcc8 100%);
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 transition-all duration-200 cursor-pointer rounded-md mx-2;
+    color: rgba(255, 255, 240, 0.7);
+  }
+
+  .sidebar-item:hover {
+    color: #c9a227;
+    background-color: rgba(58, 42, 31, 0.5);
+  }
+
+  .sidebar-item-active {
+    @apply border-l-2;
+    color: #c9a227;
+    background-color: rgba(58, 42, 31, 0.6);
+    border-color: #c9a227;
+  }
+
+  .gold-divider {
+    @apply h-px;
+    background: linear-gradient(to right, transparent, rgba(201, 162, 39, 0.4), transparent);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #1a1410;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #4a3528;
+  @apply rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #5a4030;
+}
