@@ -1,5 +1,6 @@
 import React from 'react';
-import { Animal } from '../types/animal';
+import { Animal, HealthStatus } from '../types/animal';
+import { formatAge } from '../utils/animalGrowth';
 
 const coatColors: Record<string, string> = {
   'Negro': '#1a1a2e',
@@ -17,6 +18,14 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   'Reformado': { label: 'Reformado', color: 'text-ivory/50' },
   'Vendido': { label: 'Vendido', color: 'text-blue-400' },
   'Morto': { label: 'Morto', color: 'text-red-400' },
+};
+
+const healthColors: Record<HealthStatus, string> = {
+  'Excelente': 'text-emerald-400',
+  'Bom': 'text-green-400',
+  'Regular': 'text-amber-400',
+  'Fraco': 'text-orange-400',
+  'Doente': 'text-red-400',
 };
 
 interface StatRowProps {
@@ -66,6 +75,13 @@ const AnimalDetailPanel: React.FC<AnimalDetailPanelProps> = ({
 }) => {
   const status = statusLabels[animal.status];
   const isMale = animal.sex === 'Macho';
+  const hasBreedingStats =
+    animal.category === 'Semental' ||
+    animal.category === 'Vaca' ||
+    animal.category === 'Novilha' ||
+    animal.category === 'Bezerra' ||
+    animal.category === 'Novilho' ||
+    animal.fertility > 0;
 
   return (
     <div className="h-full flex flex-col bg-leather-800/60 border-l-2 border-gold/20 overflow-y-auto">
@@ -95,7 +111,6 @@ const AnimalDetailPanel: React.FC<AnimalDetailPanelProps> = ({
         >
           <span className="text-6xl">{isMale ? '🐂' : '🐄'}</span>
         </div>
-        {/* Coat label */}
         <div className="absolute bottom-2 right-3">
           <span className="text-ivory/50 text-[11px] font-body">{animal.coat}</span>
         </div>
@@ -117,9 +132,14 @@ const AnimalDetailPanel: React.FC<AnimalDetailPanelProps> = ({
           <h3 className="font-display text-xs text-gold/70 tracking-widest uppercase mb-2">Identificação</h3>
           <div className="space-y-0">
             <InfoRow label="Sexo" value={animal.sex} />
-            <InfoRow label="Idade" value={`${animal.age} anos`} />
+            <InfoRow label="Idade" value={formatAge(animal.exactAgeMonths)} />
+            <InfoRow label="Mês Nasc." value={animal.birthMonth} />
             <InfoRow label="Ano Nasc." value={animal.birthYear} />
             <InfoRow label="Peso" value={`${animal.weight} kg`} />
+            <InfoRow
+              label="Saúde"
+              value={<span className={healthColors[animal.health]}>{animal.health}</span>}
+            />
             <InfoRow label="Pelagem" value={animal.coat} />
             <InfoRow label="Cornamento" value={animal.hornType} />
             <InfoRow label="Casta" value={animal.bloodline} />
@@ -176,8 +196,8 @@ const AnimalDetailPanel: React.FC<AnimalDetailPanelProps> = ({
           </div>
         </div>
 
-        {/* Transmission stats for breeding animals */}
-        {(animal.category === 'Semental' || animal.category === 'Vaca' || animal.category === 'Novilha') && (
+        {/* Breeding stats */}
+        {hasBreedingStats && (
           <div>
             <h3 className="font-display text-xs text-gold/70 tracking-widest uppercase mb-3">Estatísticas Genéticas</h3>
             <div className="space-y-2.5">

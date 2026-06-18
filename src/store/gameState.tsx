@@ -4,6 +4,9 @@ import {
   applyMonthToEconomy,
   type EconomyState,
 } from './economyEngine';
+import { applyMonthlyGrowth } from '../utils/animalGrowth';
+import { animals as initialAnimals } from '../data/animals';
+import type { Animal } from '../types/animal';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,6 +29,7 @@ export interface GameState {
   season: Season;
   eventLog: GameEvent[];
   economy: EconomyState;
+  animals: Animal[];
 }
 
 type GameAction = { type: 'ADVANCE_MONTH' };
@@ -101,8 +105,18 @@ function advanceMonthState(state: GameState): GameState {
     nextSeason,
   );
 
+  const { animals: newAnimals, events: animalEvents } = applyMonthlyGrowth(
+    state.animals,
+    nextMonth,
+    nextYear,
+    nextSeason,
+  );
+
   const newEvents: GameEvent[] = [ranchEvent];
   if (economicEvent) newEvents.push(economicEvent);
+  animalEvents.forEach(ev => {
+    newEvents.push({ id: nextId(), month: nextMonth, year: nextYear, text: ev.text });
+  });
 
   const newLog = [...newEvents, ...state.eventLog].slice(0, 20);
 
@@ -112,6 +126,7 @@ function advanceMonthState(state: GameState): GameState {
     season: nextSeason,
     eventLog: newLog,
     economy: newEconomy,
+    animals: newAnimals,
   };
 }
 
@@ -139,6 +154,7 @@ const INITIAL_STATE: GameState = {
     },
   ],
   economy: INITIAL_ECONOMY,
+  animals: initialAnimals,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
