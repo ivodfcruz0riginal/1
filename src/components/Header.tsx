@@ -41,12 +41,12 @@ const PHASE_ORDER: GamePhase[] = [
 ];
 
 const PHASE_LABELS: Record<GamePhase, string> = {
-  MonthStart:       'Início do Mês',
-  DailyPlanning:    'Planeamento',
-  EstateManagement: 'Gestão',
-  Decisions:        'Decisões',
-  EndOfMonth:       'Fim do Mês',
-  Simulation:       'Simulação',
+  MonthStart:       'Alvorada',
+  DailyPlanning:    'Ordens do Dia',
+  EstateManagement: 'Na Herdade',
+  Decisions:        'À Consulta',
+  EndOfMonth:       'Ao Crepúsculo',
+  Simulation:       'A Natureza Actua',
 };
 
 const PhaseIndicator: React.FC<{ current: GamePhase }> = ({ current }) => (
@@ -171,7 +171,7 @@ const Header: React.FC = () => {
         <div className="flex items-center gap-3">
           <StatBadge icon="👑" value={state.prestige} label="Prestígio" />
           <StatBadge icon="💶" value={formatEuro(state.economy.treasury)} label="Tesouraria" highlight />
-          <StatBadge icon="🐂" value={state.animals.filter(a => a.status === 'Ativo').length} label="Efetivo" />
+          <StatBadge icon="🐂" value={state.animals.filter(a => a.status === 'Ativo').length} label="Cabeças" />
 
           {/* Consequence notification bell */}
           <button

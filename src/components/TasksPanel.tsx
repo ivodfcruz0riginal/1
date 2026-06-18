@@ -125,7 +125,7 @@ const TasksPanel: React.FC = () => {
           className="w-full flex items-center justify-between px-4 py-2.5 border-b border-leather-700/50 hover:bg-leather-700/20 transition-colors"
           onClick={() => setExpanded(v => !v)}
         >
-          <p className="font-display text-[10px] text-gold tracking-widest uppercase">Tarefas do Dia</p>
+          <p className="font-display text-[10px] text-gold tracking-widest uppercase">Ordens do Dia</p>
           <div className="flex items-center gap-2">
             <span className="text-ivory/30 text-[9px] font-body">{completedCount}/{dailyTasks.length}</span>
             <span className={`text-ivory/25 text-[9px] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>▾</span>

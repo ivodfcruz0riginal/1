@@ -84,7 +84,7 @@ const LocationDetailPanel: React.FC = () => {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-leather-700 text-[10px] font-body uppercase tracking-wider">
-                  Ocupação
+                  Animais presentes
                 </span>
                 <span className="text-leather-700 text-[10px] font-body">
                   {location.currentOccupation} / {location.capacity}
@@ -107,7 +107,7 @@ const LocationDetailPanel: React.FC = () => {
           {location.notifications.length > 0 && (
             <div>
               <p className="text-leather-700 text-[10px] font-body uppercase tracking-wider mb-2">
-                Notificações
+                Acontecimentos
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {location.notifications.map(n => (
@@ -140,7 +140,7 @@ const LocationDetailPanel: React.FC = () => {
             onClick={handleClose}
             className="text-ivory/40 text-xs font-body hover:text-ivory/70 transition-colors"
           >
-            Fechar
+            Voltar à Herdade
           </button>
 
           {location.linkedScreen && (
@@ -148,7 +148,7 @@ const LocationDetailPanel: React.FC = () => {
               onClick={handleNavigate}
               className="flex items-center gap-2 px-4 py-1.5 rounded border border-gold/40 text-gold/80 text-xs font-body hover:border-gold hover:text-gold transition-all duration-200"
             >
-              Abrir {location.name}
+              Entrar em {location.name}
               <span className="text-gold/50">→</span>
             </button>
           )}

@@ -3,12 +3,12 @@ import { SectionTitle, EmptyState } from './OfficePrimitives';
 
 const ContratosTab: React.FC = () => (
   <div className="h-full flex flex-col overflow-hidden">
-    <SectionTitle>Contratos Activos</SectionTitle>
+    <SectionTitle>Acordos e Contratos</SectionTitle>
     <div className="flex-1 flex items-center justify-center">
       <EmptyState
-        icon="📜"
-        title="Sem contratos activos"
-        subtitle="Os contratos aparecerão aqui quando forem celebrados."
+        icon="🤝"
+        title="Nenhum acordo celebrado"
+        subtitle="Quando fechar negócio com praças, ganadeiros ou agentes, os contratos ficarão aqui registados."
       />
     </div>
   </div>

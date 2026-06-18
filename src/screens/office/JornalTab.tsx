@@ -112,7 +112,7 @@ const JornalTab: React.FC = () => {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex items-baseline justify-between mb-4 shrink-0">
-        <SectionTitle>Jornal Taurino</SectionTitle>
+        <SectionTitle>Gazeta Taurina</SectionTitle>
         <span className="text-ivory/25 text-[10px] font-body ml-4">
           {state.month} {state.year}
         </span>

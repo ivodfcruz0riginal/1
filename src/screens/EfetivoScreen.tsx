@@ -100,8 +100,8 @@ const EfetivoScreen: React.FC = () => {
       <div className="px-6 py-4 border-b border-leather-700/40 bg-leather-900/80 shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-display text-2xl text-gold tracking-widest uppercase">Efetivo</h2>
-            <p className="text-ivory/50 text-sm font-body mt-0.5">Gestão do efetivo da Herdade da Ferraria</p>
+            <h2 className="font-display text-2xl text-gold tracking-widest uppercase">Efectivo</h2>
+            <p className="text-ivory/50 text-sm font-body mt-0.5">Os animais da Herdade da Ferraria — sangue e bravura de cada geração</p>
           </div>
           {/* Summary chips */}
           <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -132,7 +132,7 @@ const EfetivoScreen: React.FC = () => {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Pesquisar animal..."
+              placeholder="Procurar por nome..."
               className="w-full bg-leather-800/60 border border-leather-600/50 rounded-md pl-9 pr-4 py-2 text-ivory/90 text-sm font-body placeholder-ivory/30 focus:outline-none focus:border-gold/50 transition-colors"
             />
             {search && (
@@ -146,7 +146,7 @@ const EfetivoScreen: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-ivory/40 text-xs font-body uppercase tracking-wider">Ordenar:</span>
+            <span className="text-ivory/40 text-xs font-body uppercase tracking-wider">Ordenar por:</span>
             <select
               value={sortKey}
               onChange={e => setSortKey(e.target.value as SortKey)}
@@ -159,7 +159,7 @@ const EfetivoScreen: React.FC = () => {
           </div>
 
           <div className="ml-auto text-ivory/40 text-xs font-body">
-            {filtered.length} de {allAnimals.length} animais
+            {filtered.length} de {allAnimals.length} cabeças de gado
           </div>
         </div>
 
@@ -188,8 +188,8 @@ const EfetivoScreen: React.FC = () => {
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <p className="text-ivory/30 text-4xl mb-3">🐂</p>
-              <p className="text-ivory/50 font-display text-lg tracking-wider">Nenhum animal encontrado</p>
-              <p className="text-ivory/30 text-sm font-body mt-1">Tente ajustar os filtros ou a pesquisa</p>
+              <p className="text-ivory/50 font-display text-lg tracking-wider">Nenhum animal neste cercado</p>
+              <p className="text-ivory/30 text-sm font-body mt-1">Ajuste os filtros ou a pesquisa</p>
             </div>
           ) : (
             <div className={`grid gap-3 ${selected ? 'grid-cols-2 xl:grid-cols-3' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'}`}>

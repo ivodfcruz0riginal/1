@@ -37,13 +37,13 @@ const Sidebar: React.FC = () => {
   const activeAnimalCount = state.animals.filter(a => a.status === 'Ativo').length;
 
   const menuItems = [
-    { icon: '🏘️', label: 'Herdade', to: '/herdade' },
+    { icon: '🏘️', label: 'Herdade',    to: '/herdade' },
     { icon: '🏛️', label: 'Escritório', to: '/escritorio' },
-    { icon: '🐂', label: 'Efetivo', to: '/efetivo', badge: activeAnimalCount },
-    { icon: '❤️', label: 'Reprodução', to: '/reproducao' },
-    { icon: '🎯', label: 'Tentas', to: '/tentas' },
-    { icon: '🏇', label: 'Corridas', to: '/corridas' },
-    { icon: '🏆', label: 'Legado', to: '/legado' },
+    { icon: '🐂', label: 'Efectivo',   to: '/efetivo', badge: activeAnimalCount },
+    { icon: '❤️', label: 'Criação',    to: '/reproducao' },
+    { icon: '🎯', label: 'Tentaderos', to: '/tentas' },
+    { icon: '🏟️', label: 'Corridas',   to: '/corridas' },
+    { icon: '📜', label: 'Legado',     to: '/legado' },
     { icon: '⚙️', label: 'Definições', to: '/definicoes' },
   ];
 

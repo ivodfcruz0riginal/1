@@ -115,14 +115,14 @@ const Layout: React.FC = () => {
             <Route path="/herdade" element={<HerdadePage />} />
             <Route path="/escritorio" element={<EscritorioScreen />} />
             <Route path="/efetivo" element={<EfetivoScreen />} />
-            <Route path="/reproducao" element={<PlaceholderPage title="Reprodução" subtitle="Programa de reprodução e genética" />} />
-            <Route path="/tentas" element={<PlaceholderPage title="Tentas" subtitle="Calendário e resultados das tentas" />} />
-            <Route path="/corridas" element={<PlaceholderPage title="Corridas" subtitle="Histórico e agenda de corridas" />} />
-            <Route path="/jornal" element={<PlaceholderPage title="Jornal" subtitle="Notícias e eventos da herdade" />} />
-            <Route path="/livro-da-casa" element={<PlaceholderPage title="Livro da Casa" subtitle="Registo histórico e genealógico" />} />
+            <Route path="/reproducao" element={<PlaceholderPage title="Reprodução" subtitle="A criação de bons toiros começa aqui. O programa de reprodução da ganaderia." />} />
+            <Route path="/tentas" element={<PlaceholderPage title="Tentas" subtitle="Onde se descobre a bravura. Calendário e resultados das provas de selecção." />} />
+            <Route path="/corridas" element={<PlaceholderPage title="Corridas" subtitle="Os animais que honraram esta casa. Histórico e agenda das corridas de touros." />} />
+            <Route path="/jornal" element={<PlaceholderPage title="Jornal" subtitle="O que se fala da ganaderia e do mundo taurino. Notícias e acontecimentos." />} />
+            <Route path="/livro-da-casa" element={<PlaceholderPage title="Livro da Casa" subtitle="A memória escrita da herdade. Registos, genealogias e história da ganaderia." />} />
             <Route path="/economia" element={<EconomyScreen />} />
             <Route path="/legado" element={<LegacyScreen />} />
-            <Route path="/definicoes" element={<PlaceholderPage title="Definições" subtitle="Configurações do jogo" />} />
+            <Route path="/definicoes" element={<PlaceholderPage title="Definições" subtitle="Preferências da herdade e configurações da partida." />} />
           </Routes>
         </div>
       </div>

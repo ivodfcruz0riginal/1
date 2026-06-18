@@ -16,13 +16,13 @@ type TabKey = 'diario' | 'jornal' | 'economia' | 'calendario' | 'contratos' | 'l
 
 const TABS: { key: TabKey; icon: string; label: string }[] = [
   { key: 'diario',        icon: '📖', label: 'Diário' },
-  { key: 'jornal',        icon: '📰', label: 'Jornal' },
-  { key: 'economia',      icon: '💰', label: 'Economia' },
+  { key: 'jornal',        icon: '📰', label: 'Gazeta' },
+  { key: 'economia',      icon: '💰', label: 'Finanças' },
   { key: 'calendario',    icon: '📅', label: 'Calendário' },
   { key: 'contratos',     icon: '📜', label: 'Contratos' },
   { key: 'livro',         icon: '📚', label: 'Livro da Casa' },
-  { key: 'prestigio',     icon: '🏆', label: 'Prestígio' },
-  { key: 'administracao', icon: '⚙️', label: 'Administração' },
+  { key: 'prestigio',     icon: '👑', label: 'Prestígio' },
+  { key: 'administracao', icon: '⚙️', label: 'Equipa' },
 ];
 
 // ── Office wall decorations ───────────────────────────────────────────────────
@@ -129,7 +129,7 @@ const EscritorioScreen: React.FC = () => {
               <span className="text-gold/60 text-sm">🏛️</span>
             </div>
             <div>
-              <h2 className="font-display text-lg text-gold tracking-widest uppercase leading-none">Escritório</h2>
+              <h2 className="font-display text-lg text-gold tracking-widest uppercase leading-none">Escritório do Patrão</h2>
               <p className="text-ivory/35 text-[11px] font-body mt-0.5">Herdade da Ferraria · {state.month} {state.year}</p>
             </div>
           </div>
@@ -176,9 +176,9 @@ const EscritorioScreen: React.FC = () => {
           {/* Quick stats */}
           <div className="mx-4 mt-3 space-y-2">
             {[
-              { label: 'Efectivo', value: `${state.animals.length}` },
+              { label: 'Cabeças', value: `${state.animals.length}` },
               { label: 'Tesouraria', value: `${Math.round(state.economy.treasury / 1000)}k€` },
-              { label: 'Registos', value: `${state.eventLog.length}` },
+              { label: 'Acontecimentos', value: `${state.eventLog.length}` },
             ].map(s => (
               <div key={s.label} className="flex items-baseline justify-between">
                 <span className="text-ivory/25 text-[10px] font-body uppercase tracking-wider">{s.label}</span>

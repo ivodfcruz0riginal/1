@@ -220,7 +220,7 @@ const LegacyScreen: React.FC = () => {
               1ª Geração · {gameState.year}
             </p>
             <p className="text-ivory/20 text-[9px] font-body mt-0.5">
-              {yearsManaged > 0 ? `${yearsManaged} ano${yearsManaged !== 1 ? 's' : ''} geridos` : 'Primeiro ano'}
+              {yearsManaged > 0 ? `${yearsManaged} ano${yearsManaged !== 1 ? 's' : ''} à frente da herdade` : 'Primeiro ano'}
               {totalMonths > 0 ? ` · ${totalMonths} mes${totalMonths !== 1 ? 'es' : ''}` : ''}
             </p>
           </div>
@@ -235,7 +235,7 @@ const LegacyScreen: React.FC = () => {
             />
           </div>
           <span className="text-ivory/35 text-[10px] font-body whitespace-nowrap">
-            {completedCount}/{totalCount} objectivos
+            {completedCount}/{totalCount} desafios cumpridos
           </span>
         </div>
       </div>
@@ -244,30 +244,30 @@ const LegacyScreen: React.FC = () => {
         {/* Legacy stats grid */}
         <section>
           <p className="text-ivory/25 text-[10px] font-body uppercase tracking-[0.2em] mb-3">
-            Estatísticas da Herdade
+            A Ganaderia em Números
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
             <StatCard label="Geração" value="1ª Geração" sub="Fundada em 1947" icon="🏛️" />
             <StatCard
               label="Prestígio"
-              value="250 pts"
+              value={`${gameState.prestige} pts`}
               sub="Em crescimento"
               icon="👑"
             />
             <StatCard
-              label="Melhor Touro"
+              label="Touro de Eleição"
               value={bestBull?.name ?? '—'}
               sub={bestBull ? `${bestBull.bloodline} · ${bestBull.bravery + bestBull.nobility + bestBull.stamina} pts` : undefined}
               icon="🐂"
             />
             <StatCard
-              label="Melhor Vaca"
+              label="Vaca Reprodutora"
               value={bestCow?.name ?? '—'}
               sub={bestCow ? `${bestCow.bloodline} · ${bestCow.transmission + bestCow.fertility} pts` : undefined}
               icon="🐄"
             />
             <StatCard
-              label="Melhor Linhagem"
+              label="Casta Dominante"
               value={bestBloodline}
               icon="🧬"
             />
@@ -277,7 +277,7 @@ const LegacyScreen: React.FC = () => {
         {/* Goals section */}
         <section>
           <p className="text-ivory/25 text-[10px] font-body uppercase tracking-[0.2em] mb-3">
-            Objectivos
+            Desafios da Ganaderia
           </p>
 
           {/* Timeframe tabs */}
@@ -316,7 +316,7 @@ const LegacyScreen: React.FC = () => {
         {recentEvents.length > 0 && (
           <section>
             <p className="text-ivory/25 text-[10px] font-body uppercase tracking-[0.2em] mb-3">
-              Cronologia Recente
+              Memória da Herdade
             </p>
             <div
               className="rounded-lg p-5"
