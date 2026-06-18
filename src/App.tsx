@@ -5,6 +5,7 @@ import Header from './components/Header';
 import RanchMap from './components/RanchMap';
 import NewsPanel from './components/NewsPanel';
 import PlaceholderPage from './pages/PlaceholderPage';
+import EfetivoScreen from './screens/EfetivoScreen';
 
 const HerdadePage: React.FC = () => (
   <>
@@ -62,7 +63,7 @@ const Layout: React.FC = () => {
           <Routes>
             <Route path="/" element={<Navigate to="/herdade" replace />} />
             <Route path="/herdade" element={<HerdadePage />} />
-            <Route path="/efetivo" element={<PlaceholderPage title="Efetivo" subtitle="Gestão do efetivo da herdade" />} />
+            <Route path="/efetivo" element={<EfetivoScreen />} />
             <Route path="/reproducao" element={<PlaceholderPage title="Reprodução" subtitle="Programa de reprodução e genética" />} />
             <Route path="/tentas" element={<PlaceholderPage title="Tentas" subtitle="Calendário e resultados das tentas" />} />
             <Route path="/corridas" element={<PlaceholderPage title="Corridas" subtitle="Histórico e agenda de corridas" />} />
