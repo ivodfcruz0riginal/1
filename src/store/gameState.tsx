@@ -13,8 +13,14 @@ import { generateDailyTasks } from '../data/dailyTasks';
 import type { DailyTask } from '../data/dailyTasks';
 import { OPENING_DECISION, pickDecision, nextDecisionInstanceId } from '../data/decisions';
 import type { Decision, DecisionCategory } from '../data/decisions';
-import { INITIAL_LOCATIONS, LocationManager } from '../data/locations';
-import type { Location, LocationId, LocationCondition, LocationNotification } from '../data/locations';
+import { INITIAL_LOCATIONS } from '../data/locations';
+import type { Location, LocationId, LocationCondition, LocationNotification } from '../types/location';
+import {
+  updateLocationCondition,
+  addLocationNotification,
+  clearLocationNotification,
+  updateLocationOccupation,
+} from '../services/locationService';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,7 +56,6 @@ export interface DialogueRecord {
 export type { DailyTask };
 export type { Decision, DecisionCategory };
 export type { Location, LocationId, LocationCondition, LocationNotification };
-export { LocationManager };
 
 export interface DecisionRecord {
   instanceId: string;
@@ -90,8 +95,8 @@ type GameAction =
   | { type: 'SET_ACTIVE_LOCATION'; id: LocationId | null }
   | { type: 'UPDATE_LOCATION_CONDITION'; id: LocationId; condition: LocationCondition }
   | { type: 'ADD_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
-  | { type: 'REMOVE_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
-  | { type: 'UPDATE_LOCATION_OCCUPANCY'; id: LocationId; current: number };
+  | { type: 'CLEAR_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
+  | { type: 'UPDATE_LOCATION_OCCUPATION'; id: LocationId; occupation: number };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -290,13 +295,13 @@ function reducer(state: GameState, action: GameAction): GameState {
     case 'SET_ACTIVE_LOCATION':
       return { ...state, activeLocationId: action.id };
     case 'UPDATE_LOCATION_CONDITION':
-      return { ...state, locations: LocationManager.updateCondition(state.locations, action.id, action.condition) };
+      return { ...state, locations: updateLocationCondition(state.locations, action.id, action.condition) };
     case 'ADD_LOCATION_NOTIFICATION':
-      return { ...state, locations: LocationManager.addNotification(state.locations, action.id, action.notification) };
-    case 'REMOVE_LOCATION_NOTIFICATION':
-      return { ...state, locations: LocationManager.removeNotification(state.locations, action.id, action.notification) };
-    case 'UPDATE_LOCATION_OCCUPANCY':
-      return { ...state, locations: LocationManager.updateOccupancy(state.locations, action.id, action.current) };
+      return { ...state, locations: addLocationNotification(state.locations, action.id, action.notification) };
+    case 'CLEAR_LOCATION_NOTIFICATION':
+      return { ...state, locations: clearLocationNotification(state.locations, action.id, action.notification) };
+    case 'UPDATE_LOCATION_OCCUPATION':
+      return { ...state, locations: updateLocationOccupation(state.locations, action.id, action.occupation) };
     default:
       return state;
   }
@@ -341,8 +346,8 @@ interface GameStateContextValue {
   setActiveLocation: (id: LocationId | null) => void;
   updateLocationCondition: (id: LocationId, condition: LocationCondition) => void;
   addLocationNotification: (id: LocationId, notification: LocationNotification) => void;
-  removeLocationNotification: (id: LocationId, notification: LocationNotification) => void;
-  updateLocationOccupancy: (id: LocationId, current: number) => void;
+  clearLocationNotification: (id: LocationId, notification: LocationNotification) => void;
+  updateLocationOccupation: (id: LocationId, occupation: number) => void;
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
@@ -367,17 +372,17 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     dispatch({ type: 'UPDATE_LOCATION_CONDITION', id, condition });
   const addLocationNotification = (id: LocationId, notification: LocationNotification) =>
     dispatch({ type: 'ADD_LOCATION_NOTIFICATION', id, notification });
-  const removeLocationNotification = (id: LocationId, notification: LocationNotification) =>
-    dispatch({ type: 'REMOVE_LOCATION_NOTIFICATION', id, notification });
-  const updateLocationOccupancy = (id: LocationId, current: number) =>
-    dispatch({ type: 'UPDATE_LOCATION_OCCUPANCY', id, current });
+  const clearLocationNotification = (id: LocationId, notification: LocationNotification) =>
+    dispatch({ type: 'CLEAR_LOCATION_NOTIFICATION', id, notification });
+  const updateLocationOccupation = (id: LocationId, occupation: number) =>
+    dispatch({ type: 'UPDATE_LOCATION_OCCUPATION', id, occupation });
 
   return (
     <GameStateContext.Provider value={{
       state, advanceMonth: advance, dismissNotification, answerDialogue,
       completeTask, ignoreTask, resolveDecision,
       setActiveLocation, updateLocationCondition, addLocationNotification,
-      removeLocationNotification, updateLocationOccupancy,
+      clearLocationNotification, updateLocationOccupation,
     }}>
       {children}
     </GameStateContext.Provider>

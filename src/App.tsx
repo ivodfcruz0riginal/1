@@ -6,6 +6,7 @@ import RanchMap from './components/RanchMap';
 import MaioralDialogue from './components/MaioralDialogue';
 import TasksPanel from './components/TasksPanel';
 import DecisionWindow from './components/DecisionWindow';
+import LocationDetailPanel from './components/LocationDetailPanel';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
 import EconomyScreen from './screens/EconomyScreen';
@@ -33,6 +34,7 @@ const HerdadePage: React.FC = () => (
 
     <RanchMap />
     <TasksPanel />
+    <LocationDetailPanel />
     <MaioralDialogue />
   </>
 );

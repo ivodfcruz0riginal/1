@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useGameState } from '../store/gameState';
 import type { BuildingKey, BuildingNotification, LocationId } from '../store/gameState';
 
@@ -134,36 +133,19 @@ const ManuelFigure: React.FC<ManuelFigureProps> = ({ hasDialogue }) => (
 
 const RanchMap: React.FC = () => {
   const [hovered, setHovered] = useState<string | null>(null);
-  const [comingSoon, setComingSoon] = useState<{ name: string; desc?: string } | null>(null);
-  const navigate = useNavigate();
   const { state, dismissNotification, setActiveLocation } = useGameState();
   const { notifications } = state;
 
   const hover = (key: string) => () => setHovered(key);
   const unhover = () => setHovered(null);
 
-  const goToEscritorio = () => {
-    dismissNotification('escritorio');
-    setActiveLocation('escritorio');
-    navigate('/escritorio');
-  };
-
-  const showComingSoon = (name: string, key: BuildingKey, desc?: string) => {
+  const openLocation = (key: BuildingKey) => {
     dismissNotification(key);
     setActiveLocation(key as LocationId);
-    setComingSoon({ name, desc });
   };
 
   return (
     <div className="relative h-full overflow-hidden">
-      {/* Coming Soon overlay */}
-      {comingSoon && (
-        <ComingSoonOverlay
-          name={comingSoon.name}
-          description={comingSoon.desc}
-          onClose={() => setComingSoon(null)}
-        />
-      )}
 
       {/* ── SKY ── */}
       <div className="absolute inset-0">
@@ -248,7 +230,7 @@ const RanchMap: React.FC = () => {
             className="absolute top-6 left-6 right-1/2 bottom-[52%] mr-10 mb-4 rounded cursor-pointer group"
             onMouseEnter={hover('norte')}
             onMouseLeave={unhover}
-            onClick={() => showComingSoon('Cercado Norte', 'cercado_norte', 'Gestão de cercados em breve disponível.')}
+            onClick={() => openLocation('cercado_norte')}
           >
             <div className={`absolute inset-0 rounded border-2 overflow-hidden transition-all duration-300 ${hovered === 'norte' ? 'border-gold/60 shadow-lg shadow-gold/15' : 'border-leather-600/50'}`}>
               <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/40 via-yellow-900/20 to-amber-950/30" />
@@ -291,7 +273,7 @@ const RanchMap: React.FC = () => {
             className="absolute top-[52%] left-6 right-1/2 bottom-6 mr-10 mt-4 rounded cursor-pointer group"
             onMouseEnter={hover('sul')}
             onMouseLeave={unhover}
-            onClick={() => showComingSoon('Cercado Sul', 'cercado_sul', 'Gestão de cercados em breve disponível.')}
+            onClick={() => openLocation('cercado_sul')}
           >
             <div className={`absolute inset-0 rounded border-2 overflow-hidden transition-all duration-300 ${hovered === 'sul' ? 'border-gold/60 shadow-lg shadow-gold/15' : 'border-leather-600/50'}`}>
               <div className="absolute inset-0 bg-gradient-to-b from-amber-950/30 via-yellow-900/25 to-emerald-950/20" />
@@ -328,7 +310,7 @@ const RanchMap: React.FC = () => {
             className={`absolute top-1/4 right-6 w-52 h-52 rounded-full cursor-pointer transition-transform duration-300 ${hovered === 'tentadero' ? 'scale-105' : ''}`}
             onMouseEnter={hover('tentadero')}
             onMouseLeave={unhover}
-            onClick={() => showComingSoon('Tentadero', 'tentadero', 'Arena de provas. Gestão em breve.')}
+            onClick={() => openLocation('tentadero')}
           >
             {notifications.tentadero && <NotificationBadge n={notifications.tentadero} />}
             <div className={`absolute inset-0 rounded-full border-4 shadow-2xl transition-all duration-300 ${hovered === 'tentadero' ? 'border-gold/40 shadow-gold/15' : 'border-leather-600/60'}`}>
@@ -355,8 +337,7 @@ const RanchMap: React.FC = () => {
             className="absolute top-6 right-20 w-28 h-20 cursor-pointer group"
             onMouseEnter={hover('escritorio')}
             onMouseLeave={unhover}
-            onClick={goToEscritorio}
-            style={{ zIndex: 10 }}
+            onClick={() => openLocation('escritorio')}            style={{ zIndex: 10 }}
           >
             {notifications.escritorio && <NotificationBadge n={notifications.escritorio} />}
             <BuildingTooltip name="Escritório" hint="Centro de administração" visible={hovered === 'escritorio'} />
@@ -389,7 +370,7 @@ const RanchMap: React.FC = () => {
             className="absolute top-6 right-56 w-32 h-24 cursor-pointer group"
             onMouseEnter={hover('casa')}
             onMouseLeave={unhover}
-            onClick={() => showComingSoon('Casa Principal', 'casa', 'Residência da família. Em breve disponível.')}
+            onClick={() => openLocation('casa')}
             style={{ zIndex: 10 }}
           >
             {notifications.casa && <NotificationBadge n={notifications.casa} />}
@@ -423,7 +404,7 @@ const RanchMap: React.FC = () => {
             className="absolute bottom-16 right-10 w-32 h-24 cursor-pointer group"
             onMouseEnter={hover('currais')}
             onMouseLeave={unhover}
-            onClick={() => showComingSoon('Currais', 'currais', 'Gestão de currais em breve.')}
+            onClick={() => openLocation('currais')}
             style={{ zIndex: 10 }}
           >
             {notifications.currais && <NotificationBadge n={notifications.currais} />}
@@ -454,7 +435,7 @@ const RanchMap: React.FC = () => {
             className="absolute bottom-8 right-52 w-24 h-16 cursor-pointer group"
             onMouseEnter={hover('embarque')}
             onMouseLeave={unhover}
-            onClick={() => showComingSoon('Parque de Embarque', 'embarque', 'Área de carga e transporte.')}
+            onClick={() => openLocation('embarque')}
             style={{ zIndex: 10 }}
           >
             {notifications.embarque && <NotificationBadge n={notifications.embarque} />}

@@ -1,207 +1,125 @@
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-export type LocationId =
-  | 'casa'
-  | 'escritorio'
-  | 'currais'
-  | 'tentadero'
-  | 'cercado_norte'
-  | 'cercado_sul'
-  | 'embarque'
-  | 'armazem'
-  | 'barragem'
-  | 'oficina';
-
-export type LocationType =
-  | 'residence'
-  | 'office'
-  | 'livestock'
-  | 'training'
-  | 'pasture'
-  | 'logistics'
-  | 'storage'
-  | 'infrastructure';
-
-export type LocationCondition =
-  | 'Excellent'
-  | 'Good'
-  | 'Regular'
-  | 'Poor'
-  | 'Damaged';
-
-export type LocationNotification =
-  | 'Broken fence'
-  | 'Needs cleaning'
-  | 'Waiting inspection'
-  | 'Ready'
-  | 'Busy';
-
-export interface LocationCapacity {
-  current: number;
-  maximum: number;
-}
-
-export interface Location {
-  id: LocationId;
-  name: string;
-  description: string;
-  type: LocationType;
-  capacity: LocationCapacity;
-  condition: LocationCondition;
-  notifications: LocationNotification[];
-}
-
-// ── Initial location data ─────────────────────────────────────────────────────
+import type { Location } from '../types/location';
 
 export const INITIAL_LOCATIONS: Location[] = [
   {
     id: 'casa',
     name: 'Casa Principal',
     description: 'Residência da família proprietária da herdade. Centro da vida doméstica e social da ganaderia.',
-    type: 'residence',
-    capacity: { current: 4, maximum: 10 },
+    type: 'Residence',
     condition: 'Good',
+    capacity: 0,
+    currentOccupation: 0,
     notifications: [],
+    isClickable: true,
+    notes: 'Sede da família. Reúne-se aqui nos momentos mais importantes da herdade.',
   },
   {
     id: 'escritorio',
     name: 'Escritório',
     description: 'Centro de administração da herdade. Aqui se gerem contratos, contas e correspondência.',
-    type: 'office',
-    capacity: { current: 1, maximum: 3 },
+    type: 'Office',
     condition: 'Good',
+    capacity: 0,
+    currentOccupation: 0,
     notifications: ['Ready'],
+    isClickable: true,
+    linkedScreen: '/escritorio',
+    notes: 'Administrativo activo. Contratos, livros contabilísticos e arquivo histórico.',
   },
   {
     id: 'currais',
     name: 'Currais',
     description: 'Instalações para separação e maneio individual dos toiros. Essencial nas épocas de embarque.',
-    type: 'livestock',
-    capacity: { current: 8, maximum: 12 },
+    type: 'Corrals',
     condition: 'Regular',
-    notifications: ['Needs cleaning'],
+    capacity: 12,
+    currentOccupation: 8,
+    notifications: ['NeedsCleaning'],
+    isClickable: true,
+    notes: 'Necessita limpeza e manutenção preventiva antes da próxima temporada.',
   },
   {
     id: 'tentadero',
     name: 'Tentadero',
     description: 'Arena privada para provas de bravura dos animais. Onde se avaliam os novilhos antes das tentas.',
-    type: 'training',
-    capacity: { current: 0, maximum: 4 },
+    type: 'Tentadero',
     condition: 'Good',
+    capacity: 4,
+    currentOccupation: 0,
     notifications: ['Ready'],
+    isClickable: true,
+    notes: 'Pronto para uso. Último ensaio realizado com sucesso.',
   },
   {
     id: 'cercado_norte',
     name: 'Cercado Norte',
     description: 'Pastagem principal para vacas e vitelos. Maior cercado da herdade com abundância de água.',
-    type: 'pasture',
-    capacity: { current: 24, maximum: 40 },
+    type: 'Pasture',
     condition: 'Regular',
-    notifications: ['Broken fence', 'Waiting inspection'],
+    capacity: 40,
+    currentOccupation: 24,
+    notifications: ['BrokenFence', 'WaitingInspection'],
+    isClickable: true,
+    notes: 'Sector nordeste com vedação danificada. Inspecção veterinária agendada.',
   },
   {
     id: 'cercado_sul',
     name: 'Cercado Sul',
     description: 'Pastagem secundária usada para novilhos e animais em quarentena. Boa exposição solar.',
-    type: 'pasture',
-    capacity: { current: 16, maximum: 30 },
+    type: 'Pasture',
     condition: 'Good',
+    capacity: 35,
+    currentOccupation: 16,
     notifications: ['Ready'],
+    isClickable: true,
+    notes: 'Em bom estado geral. Pastagem renovada na primavera.',
   },
   {
     id: 'embarque',
     name: 'Parque de Embarque',
     description: 'Área de carga e transporte dos animais para corridas e tentas. Manga de embarque com básculas.',
-    type: 'logistics',
-    capacity: { current: 0, maximum: 6 },
+    type: 'Shipping',
     condition: 'Good',
+    capacity: 6,
+    currentOccupation: 0,
     notifications: [],
+    isClickable: true,
+    notes: 'Disponível. Último embarque realizado sem incidentes.',
   },
   {
     id: 'armazem',
     name: 'Armazém',
     description: 'Depósito de forragens, ferramentas e equipamento agrícola. Capacidade para reservas de Inverno.',
-    type: 'storage',
-    capacity: { current: 60, maximum: 100 },
+    type: 'Storage',
     condition: 'Good',
+    capacity: 100,
+    currentOccupation: 60,
     notifications: ['Ready'],
+    isClickable: true,
+    notes: 'Reservas de feno a 60%. Suficientes para os próximos dois meses.',
   },
   {
     id: 'barragem',
     name: 'Barragem',
     description: 'Reservatório de água que abastece toda a herdade. Fundamental nos meses de seca intensa.',
-    type: 'infrastructure',
-    capacity: { current: 85, maximum: 100 },
+    type: 'Water',
     condition: 'Regular',
-    notifications: ['Waiting inspection'],
+    capacity: 100,
+    currentOccupation: 85,
+    notifications: ['WaitingInspection'],
+    isClickable: true,
+    notes: 'Nível a 85%. Inspecção anual de estruturas por realizar.',
   },
   {
     id: 'oficina',
     name: 'Oficina',
     description: 'Espaço de manutenção e reparação de veículos, máquinas e infraestruturas da herdade.',
-    type: 'infrastructure',
-    capacity: { current: 1, maximum: 4 },
+    type: 'Workshop',
     condition: 'Poor',
-    notifications: ['Needs cleaning', 'Waiting inspection'],
+    capacity: 4,
+    currentOccupation: 1,
+    notifications: ['NeedsCleaning', 'WaitingInspection'],
+    isClickable: true,
+    notes: 'Equipamento desactualizado. Necessita reorganização e manutenção urgente.',
   },
 ];
-
-// ── Location Manager ──────────────────────────────────────────────────────────
-
-export const LocationManager = {
-  getAll(locations: Location[]): Location[] {
-    return locations;
-  },
-
-  getById(locations: Location[], id: LocationId): Location | undefined {
-    return locations.find(l => l.id === id);
-  },
-
-  getByType(locations: Location[], type: LocationType): Location[] {
-    return locations.filter(l => l.type === type);
-  },
-
-  withCondition(locations: Location[], condition: LocationCondition): Location[] {
-    return locations.filter(l => l.condition === condition);
-  },
-
-  withNotification(locations: Location[], notification: LocationNotification): Location[] {
-    return locations.filter(l => l.notifications.includes(notification));
-  },
-
-  updateCondition(locations: Location[], id: LocationId, condition: LocationCondition): Location[] {
-    return locations.map(l => l.id === id ? { ...l, condition } : l);
-  },
-
-  addNotification(locations: Location[], id: LocationId, notification: LocationNotification): Location[] {
-    return locations.map(l =>
-      l.id === id && !l.notifications.includes(notification)
-        ? { ...l, notifications: [...l.notifications, notification] }
-        : l
-    );
-  },
-
-  removeNotification(locations: Location[], id: LocationId, notification: LocationNotification): Location[] {
-    return locations.map(l =>
-      l.id === id
-        ? { ...l, notifications: l.notifications.filter(n => n !== notification) }
-        : l
-    );
-  },
-
-  updateOccupancy(locations: Location[], id: LocationId, current: number): Location[] {
-    return locations.map(l =>
-      l.id === id ? { ...l, capacity: { ...l.capacity, current } } : l
-    );
-  },
-
-  isOverCapacity(location: Location): boolean {
-    return location.capacity.current > location.capacity.maximum;
-  },
-
-  occupancyRatio(location: Location): number {
-    return location.capacity.maximum === 0
-      ? 0
-      : location.capacity.current / location.capacity.maximum;
-  },
-};
