@@ -11,19 +11,7 @@ import { GameStateProvider } from './store/gameState';
 
 const HerdadePage: React.FC = () => (
   <>
-    {/* Top info overlay */}
-    <div className="absolute top-5 left-6 z-20">
-      <div className="relative bg-leather-900/95 border-2 border-gold/40 rounded-lg px-6 py-4 shadow-2xl backdrop-blur-sm">
-        <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-gold/60"></div>
-        <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-gold/60"></div>
-        <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-gold/60"></div>
-        <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-gold/60"></div>
-        <h2 className="font-display text-2xl text-gold tracking-widest">HERDADE DA FERRARIA</h2>
-        <p className="text-ivory/60 text-sm font-body mt-1 tracking-wide">Alentejo, Portugal • 1.250 hectares</p>
-      </div>
-    </div>
-
-    {/* Right: Weather & Time */}
+    {/* Weather & Time — top right */}
     <div className="absolute top-5 right-6 z-20 flex gap-3">
       <div className="bg-leather-900/90 border border-gold/30 rounded-lg px-5 py-3 shadow-xl backdrop-blur-sm">
         <p className="text-ivory/50 text-xs font-body uppercase tracking-wider">Condições</p>

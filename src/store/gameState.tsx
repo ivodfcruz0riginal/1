@@ -23,7 +23,7 @@ export interface GameEvent {
   text: string;
 }
 
-export type BuildingKey = 'escritorio' | 'tentadero' | 'currais' | 'embarque';
+export type BuildingKey = 'escritorio' | 'tentadero' | 'currais' | 'embarque' | 'cercado_norte' | 'cercado_sul' | 'casa';
 
 export interface BuildingNotification {
   icon: string;
@@ -92,7 +92,13 @@ const ESCRITORIO_NOTIFICATIONS: BuildingNotification[] = [
   { icon: '📰', label: 'Nova notícia' },
   { icon: '💰', label: 'Atualização económica' },
   { icon: '📬', label: 'Novo convite' },
+  { icon: '📜', label: 'Contrato pendente' },
+];
+
+const CERCADO_NOTIFICATIONS: BuildingNotification[] = [
+  { icon: '🐂', label: 'Animais activos' },
   { icon: '⚠️', label: 'Alerta veterinário' },
+  { icon: '🐂', label: 'Nascimentos' },
 ];
 
 function pickNotification(pool: BuildingNotification[]): BuildingNotification {
@@ -143,10 +149,16 @@ function advanceMonthState(state: GameState): GameState {
 
   const newLog = [...newEvents, ...state.eventLog].slice(0, 20);
 
-  // Each month there's a 70% chance of a new Escritório notification
+  // Each month: 70% chance of escritório notification, 30% chance per cercado
   const newNotifications = { ...state.notifications };
   if (Math.random() < 0.7) {
     newNotifications.escritorio = pickNotification(ESCRITORIO_NOTIFICATIONS);
+  }
+  if (Math.random() < 0.3) {
+    newNotifications.cercado_norte = pickNotification(CERCADO_NOTIFICATIONS);
+  }
+  if (Math.random() < 0.3) {
+    newNotifications.cercado_sul = pickNotification(CERCADO_NOTIFICATIONS);
   }
 
   return {
