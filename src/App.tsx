@@ -19,6 +19,7 @@ import { ConsequenceProvider, useConsequences } from './store/consequenceStore';
 import { GoalProvider, useGoals } from './store/goalStore';
 import { computeGoalProgress } from './services/goalService';
 import { useDayCycle } from './hooks/useDayCycle';
+import WelcomeSequence from './components/WelcomeSequence';
 
 // ── Consequence processor — activates triggered consequences on month change ──
 
@@ -93,7 +94,7 @@ const HerdadePage: React.FC = () => {
 
 const Layout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-leather-900 flex overflow-hidden">
+    <div className="relative min-h-screen bg-leather-900 flex overflow-hidden">
       {/* Leather texture overlay */}
       <div
         className="fixed inset-0 pointer-events-none opacity-[0.04]"
@@ -132,6 +133,7 @@ const Layout: React.FC = () => {
       <GoalCompletionPopup />
       <ConsequenceProcessor />
       <GoalProcessor />
+      <WelcomeSequence />
     </div>
   );
 };

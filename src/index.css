@@ -51,6 +51,16 @@
 
 /* ── Ambient animations ───────────────────────────────────────────────────── */
 
+@keyframes intro-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes intro-slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes wander {
   0%   { transform: translateX(0px) translateY(0px); }
   20%  { transform: translateX(12px) translateY(-4px); }
