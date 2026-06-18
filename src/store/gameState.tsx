@@ -9,6 +9,8 @@ import { animals as initialAnimals } from '../data/animals';
 import type { Animal } from '../types/animal';
 import { GREETING_DIALOGUE, pickMonthlyDialogue } from '../data/maioralDialogues';
 import type { DialogueTemplate } from '../data/maioralDialogues';
+import { generateDailyTasks } from '../data/dailyTasks';
+import type { DailyTask } from '../data/dailyTasks';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,6 +43,8 @@ export interface DialogueRecord {
   year: number;
 }
 
+export type { DailyTask };
+
 export interface GameState {
   year: number;
   month: Month;
@@ -51,12 +55,15 @@ export interface GameState {
   notifications: Partial<Record<BuildingKey, BuildingNotification>>;
   pendingDialogue: DialogueTemplate | null;
   dialogueHistory: DialogueRecord[];
+  dailyTasks: DailyTask[];
 }
 
 type GameAction =
   | { type: 'ADVANCE_MONTH' }
   | { type: 'DISMISS_NOTIFICATION'; building: BuildingKey }
-  | { type: 'ANSWER_DIALOGUE'; choice: string };
+  | { type: 'ANSWER_DIALOGUE'; choice: string }
+  | { type: 'COMPLETE_TASK'; id: string }
+  | { type: 'IGNORE_TASK'; id: string };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -185,6 +192,7 @@ function advanceMonthState(state: GameState): GameState {
     notifications: newNotifications,
     pendingDialogue: pickMonthlyDialogue(),
     dialogueHistory: state.dialogueHistory,
+    dailyTasks: generateDailyTasks(),
   };
 }
 
@@ -211,6 +219,22 @@ function reducer(state: GameState, action: GameAction): GameState {
         dialogueHistory: [record, ...state.dialogueHistory],
       };
     }
+    case 'COMPLETE_TASK': {
+      return {
+        ...state,
+        dailyTasks: state.dailyTasks.map(t =>
+          t.id === action.id ? { ...t, status: 'completed' } : t
+        ),
+      };
+    }
+    case 'IGNORE_TASK': {
+      return {
+        ...state,
+        dailyTasks: state.dailyTasks.map(t =>
+          t.id === action.id ? { ...t, status: 'ignored' } : t
+        ),
+      };
+    }
     default:
       return state;
   }
@@ -235,6 +259,7 @@ const INITIAL_STATE: GameState = {
   notifications: {},
   pendingDialogue: GREETING_DIALOGUE,
   dialogueHistory: [],
+  dailyTasks: generateDailyTasks(),
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -244,6 +269,8 @@ interface GameStateContextValue {
   advanceMonth: () => void;
   dismissNotification: (building: BuildingKey) => void;
   answerDialogue: (choice: string) => void;
+  completeTask: (id: string) => void;
+  ignoreTask: (id: string) => void;
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
@@ -256,9 +283,13 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
   const answerDialogue = (choice: string) =>
     dispatch({ type: 'ANSWER_DIALOGUE', choice });
+  const completeTask = (id: string) =>
+    dispatch({ type: 'COMPLETE_TASK', id });
+  const ignoreTask = (id: string) =>
+    dispatch({ type: 'IGNORE_TASK', id });
 
   return (
-    <GameStateContext.Provider value={{ state, advanceMonth: advance, dismissNotification, answerDialogue }}>
+    <GameStateContext.Provider value={{ state, advanceMonth: advance, dismissNotification, answerDialogue, completeTask, ignoreTask }}>
       {children}
     </GameStateContext.Provider>
   );
