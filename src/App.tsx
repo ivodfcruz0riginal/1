@@ -8,12 +8,16 @@ import TasksPanel from './components/TasksPanel';
 import DecisionWindow from './components/DecisionWindow';
 import LocationDetailPanel from './components/LocationDetailPanel';
 import ConsequencePanel from './components/ConsequencePanel';
+import GoalCompletionPopup from './components/GoalCompletionPopup';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
 import EconomyScreen from './screens/EconomyScreen';
 import EscritorioScreen from './screens/EscritorioScreen';
+import LegacyScreen from './screens/LegacyScreen';
 import { GameStateProvider, useGameState } from './store/gameState';
 import { ConsequenceProvider, useConsequences } from './store/consequenceStore';
+import { GoalProvider, useGoals } from './store/goalStore';
+import { computeGoalProgress } from './services/goalService';
 
 // ── Consequence processor — activates triggered consequences on month change ──
 
@@ -24,6 +28,30 @@ const ConsequenceProcessor: React.FC = () => {
   useEffect(() => {
     triggerMonth(state.month, state.year);
   }, [state.month, state.year]);
+
+  return null;
+};
+
+// ── Goal processor — updates progress whenever relevant state changes ─────────
+
+const GoalProcessor: React.FC = () => {
+  const { state: gameState } = useGameState();
+  const { state: goalState, batchUpdateProgress } = useGoals();
+
+  useEffect(() => {
+    const updates = goalState.goals.map(goal => ({
+      id: goal.id,
+      progress: computeGoalProgress(goal, gameState),
+    }));
+    batchUpdateProgress(updates, { month: gameState.month, year: gameState.year });
+  }, [
+    gameState.month,
+    gameState.year,
+    gameState.locations,
+    gameState.animals,
+    gameState.economy.treasury,
+    gameState.decisionHistory,
+  ]);
 
   return null;
 };
@@ -87,6 +115,7 @@ const Layout: React.FC = () => {
             <Route path="/jornal" element={<PlaceholderPage title="Jornal" subtitle="Notícias e eventos da herdade" />} />
             <Route path="/livro-da-casa" element={<PlaceholderPage title="Livro da Casa" subtitle="Registo histórico e genealógico" />} />
             <Route path="/economia" element={<EconomyScreen />} />
+            <Route path="/legado" element={<LegacyScreen />} />
             <Route path="/definicoes" element={<PlaceholderPage title="Definições" subtitle="Configurações do jogo" />} />
           </Routes>
         </div>
@@ -95,7 +124,9 @@ const Layout: React.FC = () => {
       {/* Global overlays */}
       <DecisionWindow />
       <ConsequencePanel />
+      <GoalCompletionPopup />
       <ConsequenceProcessor />
+      <GoalProcessor />
     </div>
   );
 };
@@ -105,9 +136,11 @@ const Layout: React.FC = () => {
 const App: React.FC = () => (
   <GameStateProvider>
     <ConsequenceProvider>
-      <BrowserRouter>
-        <Layout />
-      </BrowserRouter>
+      <GoalProvider>
+        <BrowserRouter>
+          <Layout />
+        </BrowserRouter>
+      </GoalProvider>
     </ConsequenceProvider>
   </GameStateProvider>
 );

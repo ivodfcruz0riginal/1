@@ -39,6 +39,7 @@ const Sidebar: React.FC = () => {
     { icon: '❤️', label: 'Reprodução', to: '/reproducao' },
     { icon: '🎯', label: 'Tentas', to: '/tentas' },
     { icon: '🏇', label: 'Corridas', to: '/corridas' },
+    { icon: '🏆', label: 'Legado', to: '/legado' },
     { icon: '⚙️', label: 'Definições', to: '/definicoes' },
   ];
 
