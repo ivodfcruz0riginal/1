@@ -5,6 +5,7 @@ import Header from './components/Header';
 import RanchMap from './components/RanchMap';
 import MaioralDialogue from './components/MaioralDialogue';
 import TasksPanel from './components/TasksPanel';
+import DecisionWindow from './components/DecisionWindow';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
 import EconomyScreen from './screens/EconomyScreen';
@@ -69,6 +70,9 @@ const Layout: React.FC = () => {
           </Routes>
         </div>
       </div>
+
+      {/* Decision Window — global, floats above all screens */}
+      <DecisionWindow />
     </div>
   );
 };

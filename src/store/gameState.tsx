@@ -11,6 +11,8 @@ import { GREETING_DIALOGUE, pickMonthlyDialogue } from '../data/maioralDialogues
 import type { DialogueTemplate } from '../data/maioralDialogues';
 import { generateDailyTasks } from '../data/dailyTasks';
 import type { DailyTask } from '../data/dailyTasks';
+import { OPENING_DECISION, pickDecision, nextDecisionInstanceId } from '../data/decisions';
+import type { Decision, DecisionCategory } from '../data/decisions';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,6 +46,18 @@ export interface DialogueRecord {
 }
 
 export type { DailyTask };
+export type { Decision, DecisionCategory };
+
+export interface DecisionRecord {
+  instanceId: string;
+  decisionId: string;
+  title: string;
+  category: DecisionCategory;
+  choice: string;
+  month: Month;
+  year: number;
+  result: string | null;
+}
 
 export interface GameState {
   year: number;
@@ -56,6 +70,8 @@ export interface GameState {
   pendingDialogue: DialogueTemplate | null;
   dialogueHistory: DialogueRecord[];
   dailyTasks: DailyTask[];
+  pendingDecision: Decision | null;
+  decisionHistory: DecisionRecord[];
 }
 
 type GameAction =
@@ -63,7 +79,8 @@ type GameAction =
   | { type: 'DISMISS_NOTIFICATION'; building: BuildingKey }
   | { type: 'ANSWER_DIALOGUE'; choice: string }
   | { type: 'COMPLETE_TASK'; id: string }
-  | { type: 'IGNORE_TASK'; id: string };
+  | { type: 'IGNORE_TASK'; id: string }
+  | { type: 'RESOLVE_DECISION'; choice: string };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -193,6 +210,10 @@ function advanceMonthState(state: GameState): GameState {
     pendingDialogue: pickMonthlyDialogue(),
     dialogueHistory: state.dialogueHistory,
     dailyTasks: generateDailyTasks(),
+    pendingDecision: Math.random() < 0.55
+      ? pickDecision(state.decisionHistory.slice(0, 3).map(r => r.decisionId))
+      : null,
+    decisionHistory: state.decisionHistory,
   };
 }
 
@@ -235,6 +256,24 @@ function reducer(state: GameState, action: GameAction): GameState {
         ),
       };
     }
+    case 'RESOLVE_DECISION': {
+      if (!state.pendingDecision) return state;
+      const record: DecisionRecord = {
+        instanceId: nextDecisionInstanceId(),
+        decisionId: state.pendingDecision.id,
+        title: state.pendingDecision.title,
+        category: state.pendingDecision.category,
+        choice: action.choice,
+        month: state.month,
+        year: state.year,
+        result: null,
+      };
+      return {
+        ...state,
+        pendingDecision: null,
+        decisionHistory: [record, ...state.decisionHistory],
+      };
+    }
     default:
       return state;
   }
@@ -260,6 +299,8 @@ const INITIAL_STATE: GameState = {
   pendingDialogue: GREETING_DIALOGUE,
   dialogueHistory: [],
   dailyTasks: generateDailyTasks(),
+  pendingDecision: OPENING_DECISION,
+  decisionHistory: [],
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -271,6 +312,7 @@ interface GameStateContextValue {
   answerDialogue: (choice: string) => void;
   completeTask: (id: string) => void;
   ignoreTask: (id: string) => void;
+  resolveDecision: (choice: string) => void;
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
@@ -287,9 +329,11 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     dispatch({ type: 'COMPLETE_TASK', id });
   const ignoreTask = (id: string) =>
     dispatch({ type: 'IGNORE_TASK', id });
+  const resolveDecision = (choice: string) =>
+    dispatch({ type: 'RESOLVE_DECISION', choice });
 
   return (
-    <GameStateContext.Provider value={{ state, advanceMonth: advance, dismissNotification, answerDialogue, completeTask, ignoreTask }}>
+    <GameStateContext.Provider value={{ state, advanceMonth: advance, dismissNotification, answerDialogue, completeTask, ignoreTask, resolveDecision }}>
       {children}
     </GameStateContext.Provider>
   );
