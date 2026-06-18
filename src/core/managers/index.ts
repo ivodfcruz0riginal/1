@@ -1,0 +1,9 @@
+export { AnimalManager } from './AnimalManager';
+export { PersonManager } from './PersonManager';
+export { LocationManager } from './LocationManager';
+export { ClimateManager } from './ClimateManager';
+export { EconomyManager } from './EconomyManager';
+export { EventManager } from './EventManager';
+export { DecisionManager } from './DecisionManager';
+export { HistoryManager } from './HistoryManager';
+export { TimeManager } from './TimeManager';
