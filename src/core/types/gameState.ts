@@ -1,17 +1,25 @@
 /**
- * Core GameState type for Alpha 0.3+ architecture.
+ * Core GameState types for Herança Brava.
  *
- * All fields are optional to allow incremental migration from
- * the legacy store/gameState.tsx without breaking existing screens.
- * Managers (see ../managers/) own the logic for each domain.
+ * Legacy primitives (Month, Season, GameDate, GamePhase, GameEvent) are kept
+ * here because existing managers (TimeManager, EventManager) import them from
+ * this path. Do NOT remove them until Alpha 0.3 migration is complete.
+ *
+ * CoreGameState uses the rich entity types from src/core/types/* and is the
+ * target shape for the future global simulation state.
  */
 
-import type { Animal } from '../../types/animal';
-import type { Location, LocationId } from '../../types/location';
-import type { EconomyState } from '../../store/economyEngine';
+import type { AnimalEntity } from './animal';
+import type { PersonEntity } from './person';
+import type { LocationEntity } from './location';
+import type { ClimateState } from './climate';
+import type { EconomyState } from './economy';
+import type { GameEvent as SimGameEvent } from './event';
+import type { DecisionRecord } from './decision';
+import type { RanchHistoryEntry } from './history';
 import type { DailyTask } from '../../data/dailyTasks';
-import type { Decision } from '../../data/decisions';
-import type { DialogueTemplate } from '../../data/maioralDialogues';
+
+// ── Legacy primitives (used by TimeManager, EventManager) ────────────────────
 
 export type Month =
   | 'Janeiro' | 'Fevereiro' | 'Março' | 'Abril' | 'Maio' | 'Junho'
@@ -40,38 +48,25 @@ export interface GameEvent {
   text: string;
 }
 
-/** Full core game state — fields are optional to allow gradual migration. */
+// ── CoreGameState ─────────────────────────────────────────────────────────────
+
+/**
+ * The target simulation state for Alpha 0.3+.
+ * Fields are optional to allow safe incremental migration — screens and stores
+ * may populate them gradually without requiring a full rewrite in one sprint.
+ */
 export interface CoreGameState {
-  // Time
-  time?: GameDate;
-  phase?: GamePhase;
-  hasOpenedBuildingThisMonth?: boolean;
-
-  // Animals
-  animals?: Animal[];
-
-  // Locations
-  locations?: Location[];
-  activeLocationId?: LocationId | null;
-
-  // Economy
-  economy?: EconomyState;
-
-  // Prestige
-  prestige?: number;
-
-  // Events / history
-  events?: GameEvent[];
-
-  // Decisions
-  pendingDecision?: Decision | null;
-
-  // Dialogues
-  pendingDialogue?: DialogueTemplate | null;
-
-  // Tasks
-  tasks?: DailyTask[];
-
-  // UI notifications (building-level)
-  notifications?: Record<string, { icon: string; label: string }>;
+  time: GameDate;
+  phase: GamePhase;
+  animals: AnimalEntity[];
+  people: PersonEntity[];
+  locations: LocationEntity[];
+  climate: ClimateState;
+  economy: EconomyState;
+  events: SimGameEvent[];
+  decisions: DecisionRecord[];
+  history: RanchHistoryEntry[];
+  tasks: DailyTask[];
+  notifications: Record<string, { icon: string; label: string }>;
+  prestige: number;
 }

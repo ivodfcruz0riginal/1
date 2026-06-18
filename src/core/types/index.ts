@@ -6,3 +6,4 @@ export * from './economy';
 export * from './event';
 export * from './decision';
 export * from './history';
+export type { CoreGameState } from './gameState';
