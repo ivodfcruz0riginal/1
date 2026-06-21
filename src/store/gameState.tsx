@@ -259,6 +259,10 @@ function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, locations: updateLocationOccupation(state.locations, action.id, action.occupation) };
     case 'SET_PHASE':
       return { ...state, phase: action.phase };
+    case 'ADD_GAME_EVENT': {
+      const ev: GameEvent = { id: nextId(), month: state.month, year: state.year, text: action.text };
+      return { ...state, eventLog: [ev, ...state.eventLog].slice(0, 20) };
+    }
     default:
       return state;
   }
@@ -308,6 +312,7 @@ interface GameStateContextValue {
   clearLocationNotification: (id: LocationId, notification: LocationNotification) => void;
   updateLocationOccupation: (id: LocationId, occupation: number) => void;
   setPhase: (phase: GamePhase) => void;
+  addGameEvent: (text: string) => void;
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
@@ -357,13 +362,15 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     dispatch({ type: 'UPDATE_LOCATION_OCCUPATION', id, occupation });
   const setPhase = (phase: GamePhase) =>
     dispatch({ type: 'SET_PHASE', phase });
+  const addGameEvent = (text: string) =>
+    dispatch({ type: 'ADD_GAME_EVENT', text });
 
   return (
     <GameStateContext.Provider value={{
       state, advanceMonth: advance, dismissNotification, answerDialogue,
       completeTask, ignoreTask, resolveDecision,
       setActiveLocation, updateLocationCondition, addLocationNotification,
-      clearLocationNotification, updateLocationOccupation, setPhase,
+      clearLocationNotification, updateLocationOccupation, setPhase, addGameEvent,
     }}>
       {children}
     </GameStateContext.Provider>

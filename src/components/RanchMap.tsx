@@ -131,7 +131,7 @@ const ManuelFigure: React.FC<ManuelFigureProps> = ({ hasDialogue }) => (
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-const RanchMap: React.FC = () => {
+const RanchMap: React.FC<{ highlightedId?: string | null }> = ({ highlightedId }) => {
   const [hovered, setHovered] = useState<string | null>(null);
   const { state, dismissNotification, setActiveLocation } = useGameState();
   const { notifications } = state;
@@ -266,6 +266,9 @@ const RanchMap: React.FC = () => {
                 <NotificationBadge n={notifications.cercado_norte} />
               </div>
             )}
+            {highlightedId === 'cercado_norte' && (
+              <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
+            )}
           </div>
 
           {/* ── CERCADO SUL ── */}
@@ -303,6 +306,9 @@ const RanchMap: React.FC = () => {
                 <NotificationBadge n={notifications.cercado_sul} />
               </div>
             )}
+            {highlightedId === 'cercado_sul' && (
+              <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
+            )}
           </div>
 
           {/* ── TENTADERO ── */}
@@ -313,6 +319,9 @@ const RanchMap: React.FC = () => {
             onClick={() => openLocation('tentadero')}
           >
             {notifications.tentadero && <NotificationBadge n={notifications.tentadero} />}
+            {highlightedId === 'tentadero' && (
+              <div className="absolute inset-0 rounded-full border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
+            )}
             <div className={`absolute inset-0 rounded-full border-4 shadow-2xl transition-all duration-300 ${hovered === 'tentadero' ? 'border-gold/40 shadow-gold/15' : 'border-leather-600/60'}`}>
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-leather-800/80 to-leather-900/90" />
             </div>
@@ -340,6 +349,9 @@ const RanchMap: React.FC = () => {
             onClick={() => openLocation('escritorio')}            style={{ zIndex: 10 }}
           >
             {notifications.escritorio && <NotificationBadge n={notifications.escritorio} />}
+            {highlightedId === 'escritorio' && (
+              <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
+            )}
             <BuildingTooltip name="Escritório" hint="Centro de administração" visible={hovered === 'escritorio'} />
             {/* Shadow */}
             <div className="absolute inset-0 bg-black/30 translate-y-2 translate-x-1 rounded pointer-events-none" />
@@ -408,6 +420,9 @@ const RanchMap: React.FC = () => {
             style={{ zIndex: 10 }}
           >
             {notifications.currais && <NotificationBadge n={notifications.currais} />}
+            {highlightedId === 'currais' && (
+              <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
+            )}
             <BuildingTooltip name="Currais" hint="8 toiros em manga" visible={hovered === 'currais'} />
             <div className={`absolute inset-0 rounded border-2 overflow-hidden transition-all duration-300 ${hovered === 'currais' ? 'border-gold/50 shadow-md shadow-gold/10' : 'border-leather-600/50'}`}>
               <div className={`absolute inset-0 bg-gold/5 transition-opacity duration-300 ${hovered === 'currais' ? 'opacity-100' : 'opacity-0'}`} />
@@ -439,6 +454,9 @@ const RanchMap: React.FC = () => {
             style={{ zIndex: 10 }}
           >
             {notifications.embarque && <NotificationBadge n={notifications.embarque} />}
+            {highlightedId === 'embarque' && (
+              <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
+            )}
             <BuildingTooltip name="Parque de Embarque" hint="Carga e transporte" visible={hovered === 'embarque'} />
             <div className={`absolute inset-0 rounded border-2 shadow-lg transition-all duration-300 ${hovered === 'embarque' ? 'border-gold/40 shadow-gold/10' : 'border-leather-600/50'}`}>
               <div className="absolute inset-0 bg-gradient-to-b from-leather-700/80 via-leather-600/60 to-leather-700 rounded" />

@@ -89,4 +89,5 @@ export type GameAction =
   | { type: 'ADD_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
   | { type: 'CLEAR_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
   | { type: 'UPDATE_LOCATION_OCCUPATION'; id: LocationId; occupation: number }
-  | { type: 'SET_PHASE'; phase: GamePhase };
+  | { type: 'SET_PHASE'; phase: GamePhase }
+  | { type: 'ADD_GAME_EVENT'; text: string };
