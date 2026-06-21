@@ -6,15 +6,11 @@ import {
 } from './economyEngine';
 import { applyMonthlyGrowth } from '../utils/animalGrowth';
 import { animals as initialAnimals } from '../data/animals';
-import type { Animal } from '../types/animal';
 import { GREETING_DIALOGUE, pickMonthlyDialogue } from '../data/maioralDialogues';
 import type { DialogueTemplate } from '../data/maioralDialogues';
 import { generateDailyTasks } from '../data/dailyTasks';
-import type { DailyTask } from '../data/dailyTasks';
 import { OPENING_DECISION, pickDecision, nextDecisionInstanceId } from '../data/decisions';
-import type { Decision, DecisionCategory } from '../data/decisions';
 import { INITIAL_LOCATIONS } from '../data/locations';
-import type { Location, LocationId, LocationCondition, LocationNotification } from '../types/location';
 import {
   updateLocationCondition,
   addLocationNotification,
@@ -22,149 +18,69 @@ import {
   updateLocationOccupation,
 } from '../services/locationService';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Re-export types ───────────────────────────────────────────────────────────
 
-export type GamePhase =
-  | 'MonthStart'
-  | 'DailyPlanning'
-  | 'EstateManagement'
-  | 'Decisions'
-  | 'EndOfMonth'
-  | 'Simulation';
+export type {
+  GamePhase,
+  Month,
+  Season,
+  GameEvent,
+  BuildingKey,
+  BuildingNotification,
+  MaioralDialogue,
+  DialogueRecord,
+  DailyTask,
+  Decision,
+  DecisionCategory,
+  DecisionRecord,
+  Location,
+  LocationId,
+  LocationCondition,
+  LocationNotification,
+  GameState,
+  GameAction,
+} from './gameTypes';
 
-export type Month =
-  | 'Janeiro' | 'Fevereiro' | 'Março' | 'Abril' | 'Maio' | 'Junho'
-  | 'Julho' | 'Agosto' | 'Setembro' | 'Outubro' | 'Novembro' | 'Dezembro';
+import type {
+  GamePhase,
+  Month,
+  Season,
+  GameEvent,
+  BuildingKey,
+  BuildingNotification,
+  DialogueRecord,
+  DecisionRecord,
+  GameState,
+  GameAction,
+  LocationId,
+  LocationCondition,
+  LocationNotification,
+  Decision,
+} from './gameTypes';
 
-export type Season = 'Primavera' | 'Verão' | 'Outono' | 'Inverno';
+// ── Re-export constants ───────────────────────────────────────────────────────
 
-export interface GameEvent {
-  id: string;
-  month: Month;
-  year: number;
-  text: string;
-}
+export {
+  MONTHS,
+  SEASON_MAP,
+  EVENTS_POOL,
+  ESCRITORIO_NOTIFICATIONS,
+  CERCADO_NOTIFICATIONS,
+} from './gameConstants';
 
-export type BuildingKey = 'escritorio' | 'tentadero' | 'currais' | 'embarque' | 'cercado_norte' | 'cercado_sul' | 'casa';
+import {
+  MONTHS,
+  SEASON_MAP,
+  EVENTS_POOL,
+  ESCRITORIO_NOTIFICATIONS,
+  CERCADO_NOTIFICATIONS,
+} from './gameConstants';
 
-export interface BuildingNotification {
-  icon: string;
-  label: string;
-}
+// ── Re-export EconomyState ────────────────────────────────────────────────────
 
-export type { DialogueTemplate as MaioralDialogue };
+export type { EconomyState };
 
-export interface DialogueRecord {
-  dialogueId: string;
-  choice: string;
-  month: Month;
-  year: number;
-}
-
-export type { DailyTask };
-export type { Decision, DecisionCategory };
-export type { Location, LocationId, LocationCondition, LocationNotification };
-
-export interface DecisionRecord {
-  instanceId: string;
-  decisionId: string;
-  title: string;
-  category: DecisionCategory;
-  choice: string;
-  month: Month;
-  year: number;
-  result: string | null;
-}
-
-export interface GameState {
-  year: number;
-  month: Month;
-  season: Season;
-  eventLog: GameEvent[];
-  economy: EconomyState;
-  animals: Animal[];
-  notifications: Partial<Record<BuildingKey, BuildingNotification>>;
-  pendingDialogue: DialogueTemplate | null;
-  dialogueHistory: DialogueRecord[];
-  dailyTasks: DailyTask[];
-  pendingDecision: Decision | null;
-  decisionHistory: DecisionRecord[];
-  locations: Location[];
-  activeLocationId: LocationId | null;
-  phase: GamePhase;
-  hasOpenedBuildingThisMonth: boolean;
-}
-
-type GameAction =
-  | { type: 'ADVANCE_MONTH' }
-  | { type: 'DISMISS_NOTIFICATION'; building: BuildingKey }
-  | { type: 'ANSWER_DIALOGUE'; choice: string }
-  | { type: 'COMPLETE_TASK'; id: string }
-  | { type: 'IGNORE_TASK'; id: string }
-  | { type: 'RESOLVE_DECISION'; choice: string }
-  | { type: 'SET_ACTIVE_LOCATION'; id: LocationId | null }
-  | { type: 'UPDATE_LOCATION_CONDITION'; id: LocationId; condition: LocationCondition }
-  | { type: 'ADD_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
-  | { type: 'CLEAR_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
-  | { type: 'UPDATE_LOCATION_OCCUPATION'; id: LocationId; occupation: number }
-  | { type: 'SET_PHASE'; phase: GamePhase };
-
-// ── Constants ────────────────────────────────────────────────────────────────
-
-const MONTHS: Month[] = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-];
-
-const SEASON_MAP: Record<Month, Season> = {
-  'Março': 'Primavera', 'Abril': 'Primavera', 'Maio': 'Primavera',
-  'Junho': 'Verão',     'Julho': 'Verão',     'Agosto': 'Verão',
-  'Setembro': 'Outono', 'Outubro': 'Outono',  'Novembro': 'Outono',
-  'Dezembro': 'Inverno','Janeiro': 'Inverno', 'Fevereiro': 'Inverno',
-};
-
-const EVENTS_POOL: string[] = [
-  'Nasceram 3 vitelos saudáveis no Cercado Norte.',
-  'Nasceram 5 vitelos — excelente época de partos.',
-  'Nasceram 2 vitelos. Um deles já mostra sinais de bravura.',
-  'Grande seca. As pastagens ressentem-se.',
-  'Primavera muito húmida. Pastagens exuberantes.',
-  'Excelente produção de pastagens este mês.',
-  'Um trabalhador reformou-se após 30 anos de serviço.',
-  'Veterinário visitou a herdade. Efetivo em boa saúde.',
-  'Recebido convite para tienta em Salamanca.',
-  'Recebido convite para corrida em Lisboa.',
-  'Recebido convite para corrida na Moita.',
-  'Recebido convite para corrida em Espanha.',
-  'Excelente evolução dos novilhos do Cercado Sul.',
-  'Problemas na vedação do Cercado Norte. Reparação urgente.',
-  'Pequena doença respiratória detetada. Veterinário em vigilância.',
-  'Boa produção de feno. Reservas para o Inverno asseguradas.',
-  'Comprado novo cavalo para trabalho na herdade.',
-  'Visita de um ganadeiro espanhol interessado em reprodução.',
-  'Chuvas intensas causaram alagamento parcial das pastagens.',
-  'Tempo seco e quente. Animais transferidos para Cercado Norte.',
-  'Um novilho distinguiu-se durante o treino no tentadero.',
-  'Acordo de parceria assinado com ganaderia vizinha.',
-  'Festival taurino em Évora — boa visibilidade para a ganaderia.',
-  'Recebido relatório veterinário anual. Sem anomalias graves.',
-  'Trabalhos de manutenção concluídos no tentadero.',
-];
-
-// ── Notification pools ────────────────────────────────────────────────────────
-
-const ESCRITORIO_NOTIFICATIONS: BuildingNotification[] = [
-  { icon: '📰', label: 'Nova notícia' },
-  { icon: '💰', label: 'Atualização económica' },
-  { icon: '📬', label: 'Novo convite' },
-  { icon: '📜', label: 'Contrato pendente' },
-];
-
-const CERCADO_NOTIFICATIONS: BuildingNotification[] = [
-  { icon: '🐂', label: 'Animais activos' },
-  { icon: '⚠️', label: 'Alerta veterinário' },
-  { icon: '🐂', label: 'Nascimentos' },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function pickNotification(pool: BuildingNotification[]): BuildingNotification {
   return pool[Math.floor(Math.random() * pool.length)];
