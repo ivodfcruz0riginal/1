@@ -46,9 +46,12 @@ const ComingSoonOverlay: React.FC<ComingSoonProps> = ({ name, description, onClo
 // ── Notification badge ────────────────────────────────────────────────────────
 
 const NotificationBadge: React.FC<{ n: BuildingNotification }> = ({ n }) => (
-  <div className="absolute -top-4 -right-2 z-20 flex items-center gap-1 bg-leather-900 border border-gold/70 rounded-full px-2 py-0.5 shadow-lg animate-bounce pointer-events-none select-none">
-    <span className="text-[11px] leading-none">{n.icon}</span>
-    <span className="text-gold text-[9px] font-body uppercase tracking-wide whitespace-nowrap">{n.label}</span>
+  <div className="absolute -top-5 -right-2 z-20 pointer-events-none select-none">
+    <div className="relative flex items-center gap-1 bg-leather-900/95 border border-gold/50 rounded-full px-2 py-0.5 shadow-lg shadow-gold/10">
+      <div className="absolute inset-0 rounded-full border border-gold/30 animate-ping opacity-40" />
+      <span className="text-[11px] leading-none">{n.icon}</span>
+      <span className="text-gold/90 text-[9px] font-body uppercase tracking-wide whitespace-nowrap">{n.label}</span>
+    </div>
   </div>
 );
 
@@ -270,6 +273,24 @@ const ParkedTruck: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
   </div>
 );
 
+// ── Water trough — bebedouro ─────────────────────────────────────────────────
+
+const WaterTrough: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
+  <div className="absolute pointer-events-none" style={style}>
+    <div className="relative w-12 h-3 bg-leather-700/70 border border-leather-600/40 rounded-sm overflow-hidden">
+      <div className="absolute inset-0.5 bg-sky-900/60 rounded-sm animate-water-shimmer" />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-6 h-1.5 rounded-full border border-sky-400/35 animate-water-ripple" />
+        <div className="absolute w-6 h-1.5 rounded-full border border-sky-300/20 animate-water-ripple" style={{ animationDelay: '1.3s' }} />
+      </div>
+    </div>
+    <div className="flex justify-between px-2">
+      <div className="w-1 h-1.5 bg-leather-700/50" />
+      <div className="w-1 h-1.5 bg-leather-700/50" />
+    </div>
+  </div>
+);
+
 // ── Sky tint per period ───────────────────────────────────────────────────────
 
 function getSkyTint(period: DayPeriod, weather: WeatherType): string {
@@ -399,8 +420,8 @@ const RanchMap: React.FC = () => {
       {[{ top: '8%', left: '15%' }, { top: '75%', left: '30%' }, { top: '20%', right: '40%' }, { top: '60%', right: '55%' }].map((pos, i) => (
         <div key={i} className="absolute pointer-events-none" style={{ ...pos, opacity: isNight ? 0.2 : 0.4 }}>
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-6 bg-leather-800/80 rounded-t" />
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-6 bg-emerald-950/60 rounded-t-full" />
-          <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-5 h-4 bg-emerald-950/50 rounded-full" />
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-6 bg-emerald-950/60 rounded-t-full animate-canopy-sway" style={{ animationDelay: `${i * 1.3}s` }} />
+          <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-5 h-4 bg-emerald-950/50 rounded-full animate-canopy-sway" style={{ animationDelay: `${i * 1.3 + 0.5}s` }} />
         </div>
       ))}
 
@@ -457,7 +478,7 @@ const RanchMap: React.FC = () => {
               <div className={`absolute inset-0 bg-gold/5 transition-opacity duration-300 ${hovered === 'norte' ? 'opacity-100' : 'opacity-0'}`} />
               <div className="absolute inset-0 opacity-30">
                 {[...Array(25)].map((_, i) => (
-                  <div key={i} className="absolute w-1 h-3 bg-emerald-800/40 rounded-t" style={{ left: `${5 + (i * 3.8) % 90}%`, top: `${10 + Math.sin(i * 0.5) * 40}%`, transform: `rotate(${-10 + (i % 3) * 10}deg)` }} />
+                  <div key={i} className="absolute w-1 h-3 bg-emerald-800/40 rounded-t animate-blade-sway" style={{ left: `${5 + (i * 3.8) % 90}%`, top: `${10 + Math.sin(i * 0.5) * 40}%`, transform: `rotate(${-10 + (i % 3) * 10}deg)`, animationDelay: `${(i * 0.15) % 2.8}s` }} />
                 ))}
               </div>
               <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-emerald-950/30 to-transparent" />
@@ -478,6 +499,8 @@ const RanchMap: React.FC = () => {
             {ambientEvents.showDrinkingBull && (
               <BullSilhouette size="md" anim="drink" delay={0.5} style={{ position: 'absolute', bottom: 15, left: 190, opacity: 0.75 }} />
             )}
+            {/* Water trough — always visible */}
+            <WaterTrough style={{ position: 'absolute', bottom: 6, left: 196, zIndex: 9 }} />
 
             <div className={`absolute bottom-3 left-3 transition-opacity duration-200 ${hovered === 'norte' ? 'opacity-0' : 'opacity-100'}`}>
               <span className="text-ivory/40 text-[10px] font-body uppercase tracking-widest">Cercado Norte</span>
@@ -509,7 +532,7 @@ const RanchMap: React.FC = () => {
               <div className={`absolute inset-0 bg-gold/5 transition-opacity duration-300 ${hovered === 'sul' ? 'opacity-100' : 'opacity-0'}`} />
               <div className="absolute inset-0 opacity-30">
                 {[...Array(20)].map((_, i) => (
-                  <div key={i} className="absolute w-1 h-3 bg-emerald-800/40 rounded-t" style={{ left: `${8 + (i * 4.5) % 88}%`, top: `${5 + Math.cos(i * 0.6) * 35}%`, transform: `rotate(${5 + (i % 4) * 5}deg)` }} />
+                  <div key={i} className="absolute w-1 h-3 bg-emerald-800/40 rounded-t animate-blade-sway" style={{ left: `${8 + (i * 4.5) % 88}%`, top: `${5 + Math.cos(i * 0.6) * 35}%`, transform: `rotate(${5 + (i % 4) * 5}deg)`, animationDelay: `${(i * 0.18) % 2.8}s` }} />
                 ))}
               </div>
               <div className={`absolute top-2 left-1/2 -translate-x-1/2 transition-all duration-200 ${hovered === 'sul' ? 'opacity-100' : 'opacity-0'}`}>
