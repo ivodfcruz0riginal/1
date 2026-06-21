@@ -11,6 +11,25 @@ import {
   getLocationById,
 } from '../services/locationService';
 
+const SimMetricBar: React.FC<{ label: string; value: number }> = ({ label, value }) => (
+  <div>
+    <div className="flex justify-between items-center mb-0.5">
+      <span className="text-leather-700 text-[9px] font-body">{label}</span>
+      <span className="text-leather-600 text-[9px] font-body">{value}%</span>
+    </div>
+    <div className="h-1 bg-leather-600/25 rounded-full overflow-hidden">
+      <div
+        className={`h-full rounded-full transition-all duration-500 ${
+          value > 65 ? 'bg-emerald-600/70' :
+          value > 35 ? 'bg-amber-500/70' :
+                       'bg-red-500/70'
+        }`}
+        style={{ width: `${value}%` }}
+      />
+    </div>
+  </div>
+);
+
 const LocationDetailPanel: React.FC = () => {
   const { state, setActiveLocation } = useGameState();
   const navigate = useNavigate();
@@ -128,6 +147,30 @@ const LocationDetailPanel: React.FC = () => {
             <p className="text-leather-600 text-xs font-body italic border-t border-leather-500/20 pt-3">
               {location.notes}
             </p>
+          )}
+
+          {/* Simulation metrics */}
+          {(location.pastureQuality !== undefined ||
+            location.waterLevel !== undefined ||
+            location.fenceCondition !== undefined ||
+            location.cleanliness !== undefined) && (
+            <div className="border-t border-leather-500/20 pt-3 space-y-2">
+              <p className="text-leather-700 text-[10px] font-body uppercase tracking-wider mb-2">
+                Estado Técnico
+              </p>
+              {location.pastureQuality !== undefined && (
+                <SimMetricBar label="Pastagem" value={location.pastureQuality} />
+              )}
+              {location.waterLevel !== undefined && (
+                <SimMetricBar label="Nível de Água" value={location.waterLevel} />
+              )}
+              {location.fenceCondition !== undefined && (
+                <SimMetricBar label="Vedação" value={location.fenceCondition} />
+              )}
+              {location.cleanliness !== undefined && (
+                <SimMetricBar label="Limpeza" value={location.cleanliness} />
+              )}
+            </div>
           )}
         </div>
 

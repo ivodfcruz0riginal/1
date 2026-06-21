@@ -147,6 +147,7 @@ export function calculateMonth(
   year: number,
   season: Season,
   currentTreasury: number,
+  pastureMod = 1.0, // feeding cost modifier from pasture quality (0.85–1.30)
 ): {
   record: MonthlyRecord;
   newTreasury: number;
@@ -157,8 +158,8 @@ export function calculateMonth(
     : ECONOMIC_EVENTS.length - 1; // neutral
   const ecoEvent = ECONOMIC_EVENTS[eventIdx];
 
-  // Compute expenses with seasonal + event modifiers
-  const feedingMod = (ecoEvent.expenseMultipliers?.feeding ?? 1) * SEASON_FEEDING_MOD[season];
+  // Compute expenses with seasonal + pasture + event modifiers
+  const feedingMod = (ecoEvent.expenseMultipliers?.feeding ?? 1) * SEASON_FEEDING_MOD[season] * pastureMod;
   const expenses: ExpensesBreakdown = {
     salaries: Math.round(BASE_EXPENSES.salaries * (ecoEvent.expenseMultipliers?.salaries ?? 1)),
     feeding: Math.round(BASE_EXPENSES.feeding * feedingMod),
@@ -223,8 +224,9 @@ export function applyMonthToEconomy(
   month: Month,
   year: number,
   season: Season,
+  pastureMod = 1.0,
 ): { economy: EconomyState; economicEvent: GameEvent | null } {
-  const { record, newTreasury } = calculateMonth(month, year, season, economy.treasury);
+  const { record, newTreasury } = calculateMonth(month, year, season, economy.treasury, pastureMod);
 
   const newHistory = [record, ...economy.history].slice(0, 60);
 

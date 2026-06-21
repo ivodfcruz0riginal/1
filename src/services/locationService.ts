@@ -113,3 +113,11 @@ export function updateLocationOccupation(
 export function occupancyRatio(location: Location): number {
   return location.capacity === 0 ? 0 : location.currentOccupation / location.capacity;
 }
+
+export function resetPastureAfterRepair(locations: Location[], id: LocationId): Location[] {
+  return locations.map(l =>
+    l.id === id
+      ? { ...l, condition: 'Good', pastureQuality: 70, fenceCondition: 80 }
+      : l,
+  );
+}

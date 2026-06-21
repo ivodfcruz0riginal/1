@@ -6,7 +6,7 @@ import type {
   BuildingNotification,
   BuildingKey,
 } from '../../store/gameTypes';
-import type { Location, LocationCondition } from '../../types/location';
+import type { Location } from '../../types/location';
 import type { Decision } from '../../data/decisions';
 
 import {
@@ -17,13 +17,13 @@ import {
 } from '../../store/gameConstants';
 import { applyMonthToEconomy } from '../../store/economyEngine';
 import { updateAnimals, type AnimalDiaryEvent } from './AnimalSimulationService';
+import { updateLocations, type LocationDiaryEvent } from './LocationSimulationService';
 import { pickMonthlyDialogue } from '../../data/maioralDialogues';
 import {
   FENCE_CONSEQUENCE_DELAYED,
   FENCE_CONSEQUENCE_IGNORED,
   pickDecision,
 } from '../../data/decisions';
-import { updateLocationCondition } from '../../services/locationService';
 import { generateDailyTasks } from '../../data/dailyTasks';
 
 // ── ID generator (local to this module) ──────────────────────────────────────
@@ -80,16 +80,6 @@ interface ClimateCtx extends DateCtx {
   newSeason: boolean;
 }
 
-// ── Condition ordering for pasture degradation ────────────────────────────────
-
-const CONDITION_ORDER: LocationCondition[] = [
-  'Excellent',
-  'Good',
-  'Regular',
-  'Poor',
-  'Damaged',
-];
-
 // ── Phase 1: Advance Date ─────────────────────────────────────────────────────
 //
 // Derives the next month, year, and season from the current date.
@@ -118,73 +108,24 @@ function phase2_updateClimate(date: DateCtx): ClimateCtx {
 
 // ── Phase 3: Update Pastures ──────────────────────────────────────────────────
 //
-// Applies climate effects to location conditions.
-// Broken fences degrade the enclosure; drought degrades summer pastures;
-// spring rains restore pastures that were previously degraded.
+// Delegates to LocationSimulationService which handles all per-location
+// simulation: pasture quality, fence wear, cleanliness, water levels,
+// and occupation counts. Returns a feedingCostMod for the economy engine.
 
 function phase3_updatePastures(
   climate: ClimateCtx,
   state: GameState,
-): { locations: Location[]; pastureEvents: GameEvent[] } {
-  const pastureEvents: GameEvent[] = [];
-  let locations = state.locations;
-
-  const norte = locations.find(l => l.id === 'cercado_norte');
-
-  // Broken fence → progressive condition deterioration
-  if (norte?.notifications.includes('BrokenFence')) {
-    const idx = CONDITION_ORDER.indexOf(norte.condition);
-    if (idx < CONDITION_ORDER.length - 1) {
-      locations = updateLocationCondition(
-        locations,
-        'cercado_norte',
-        CONDITION_ORDER[idx + 1],
-      );
-      pastureEvents.push({
-        id: nextId(),
-        month: climate.month,
-        year: climate.year,
-        text: 'Vedação por reparar — condição do Cercado Norte deteriora.',
-      });
-    }
-  }
-
-  // Drought → south pasture degrades if currently in good condition
-  if (climate.droughtRisk) {
-    const sul = locations.find(l => l.id === 'cercado_sul');
-    if (sul) {
-      const idx = CONDITION_ORDER.indexOf(sul.condition);
-      if (idx < 2) {
-        locations = updateLocationCondition(
-          locations,
-          'cercado_sul',
-          CONDITION_ORDER[idx + 1],
-        );
-        pastureEvents.push({
-          id: nextId(),
-          month: climate.month,
-          year: climate.year,
-          text: 'Seca de Verão — qualidade das pastagens do Cercado Sul diminuiu.',
-        });
-      }
-    }
-  }
-
-  // Spring rains → south pasture recovers (only when season just changed)
-  if (climate.newSeason && climate.season === 'Primavera') {
-    const sul = locations.find(l => l.id === 'cercado_sul');
-    if (sul && (sul.condition === 'Regular' || sul.condition === 'Poor')) {
-      locations = updateLocationCondition(locations, 'cercado_sul', 'Good');
-      pastureEvents.push({
-        id: nextId(),
-        month: climate.month,
-        year: climate.year,
-        text: 'Chuvas da Primavera — pastagens do Cercado Sul recuperaram.',
-      });
-    }
-  }
-
-  return { locations, pastureEvents };
+): { locations: Location[]; locationEvents: LocationDiaryEvent[]; feedingCostMod: number } {
+  const result = updateLocations(state.locations, state.animals, {
+    season: climate.season,
+    droughtRisk: climate.droughtRisk,
+    newSeason: climate.newSeason,
+  });
+  return {
+    locations: result.locations,
+    locationEvents: result.diaryEvents,
+    feedingCostMod: result.feedingCostMod,
+  };
 }
 
 // ── Phase 4: Update Animals ───────────────────────────────────────────────────
@@ -217,8 +158,8 @@ function phase4_updateAnimals(
 // Delegates to the economy engine: applies seasonal modifiers, computes
 // monthly income/expenses, and appends the record to history.
 
-function phase5_updateEconomy(climate: ClimateCtx, state: GameState) {
-  return applyMonthToEconomy(state.economy, climate.month, climate.year, climate.season);
+function phase5_updateEconomy(climate: ClimateCtx, state: GameState, feedingCostMod: number) {
+  return applyMonthToEconomy(state.economy, climate.month, climate.year, climate.season, feedingCostMod);
 }
 
 // ── Phase 6: Resolve Pending Consequences ─────────────────────────────────────
@@ -261,12 +202,14 @@ function phase7_generateEvents(
   state: GameState,
   animalEvents: AnimalDiaryEvent[],
   economicEvent: GameEvent | null,
-  pastureEvents: GameEvent[],
+  locationEvents: LocationDiaryEvent[],
 ): GameEvent[] {
   const events: GameEvent[] = [];
 
-  // 1. Pasture state changes (from Phase 3)
-  events.push(...pastureEvents);
+  // 1. Location state changes (from Phase 3)
+  for (const ev of locationEvents) {
+    events.push({ id: nextId(), month: climate.month, year: climate.year, text: ev.text });
+  }
 
   // 2. Animal-level events (capped inside applyMonthlyGrowth already)
   for (const ev of animalEvents) {
@@ -286,18 +229,7 @@ function phase7_generateEvents(
     });
   }
 
-  // 5. Ongoing broken fence warning
-  const norte = state.locations.find(l => l.id === 'cercado_norte');
-  if (norte?.notifications.includes('BrokenFence')) {
-    events.push({
-      id: nextId(),
-      month: climate.month,
-      year: climate.year,
-      text: 'Vedação do Cercado Norte ainda danificada. Reparação pendente.',
-    });
-  }
-
-  // 6. Low treasury warning
+  // 5. Low treasury warning
   if (state.economy.treasury < 20_000) {
     events.push({
       id: nextId(),
@@ -381,13 +313,13 @@ export function simulateMonth(state: GameState): SimulationOutput {
   const climate = phase2_updateClimate(date);
 
   // Phase 3: Update Pastures
-  const { locations, pastureEvents } = phase3_updatePastures(climate, state);
+  const { locations, locationEvents, feedingCostMod } = phase3_updatePastures(climate, state);
 
   // Phase 4: Update Animals (receives updated locations for enclosure context)
   const { animals, animalEvents } = phase4_updateAnimals(climate, state, locations);
 
   // Phase 5: Update Economy
-  const { economy, economicEvent } = phase5_updateEconomy(climate, state);
+  const { economy, economicEvent } = phase5_updateEconomy(climate, state, feedingCostMod);
 
   // Phase 6: Resolve Pending Consequences
   const { pendingDecision, nextFenceConsequence } = phase6_resolvePendingConsequences(state);
@@ -398,7 +330,7 @@ export function simulateMonth(state: GameState): SimulationOutput {
     state,
     animalEvents,
     economicEvent,
-    pastureEvents,
+    locationEvents,
   );
 
   // Notifications update

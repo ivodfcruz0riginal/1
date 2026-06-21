@@ -37,6 +37,8 @@ export const INITIAL_LOCATIONS: Location[] = [
     notifications: ['NeedsCleaning'],
     isClickable: true,
     notes: 'Necessita limpeza e manutenção preventiva antes da próxima temporada.',
+    fenceCondition: 65,
+    cleanliness: 45,
   },
   {
     id: 'tentadero',
@@ -61,6 +63,9 @@ export const INITIAL_LOCATIONS: Location[] = [
     notifications: ['BrokenFence', 'WaitingInspection'],
     isClickable: true,
     notes: 'Sector nordeste com vedação danificada. Inspecção veterinária agendada.',
+    pastureQuality: 55,
+    fenceCondition: 35,
+    cleanliness: 70,
   },
   {
     id: 'cercado_sul',
@@ -73,6 +78,9 @@ export const INITIAL_LOCATIONS: Location[] = [
     notifications: ['Ready'],
     isClickable: true,
     notes: 'Em bom estado geral. Pastagem renovada na primavera.',
+    pastureQuality: 70,
+    fenceCondition: 82,
+    cleanliness: 75,
   },
   {
     id: 'embarque',
@@ -109,6 +117,7 @@ export const INITIAL_LOCATIONS: Location[] = [
     notifications: ['WaitingInspection'],
     isClickable: true,
     notes: 'Nível a 85%. Inspecção anual de estruturas por realizar.',
+    waterLevel: 85,
   },
   {
     id: 'oficina',

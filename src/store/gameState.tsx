@@ -14,6 +14,7 @@ import {
   addLocationNotification,
   clearLocationNotification,
   updateLocationOccupation,
+  resetPastureAfterRepair,
 } from '../services/locationService';
 import { simulateMonth } from '../core/simulation/SimulationEngine';
 
@@ -185,7 +186,7 @@ function reducer(state: GameState, action: GameAction): GameState {
             economy: { ...next.economy, treasury: next.economy.treasury - 1500 },
             notifications: withoutNotif,
             locations: clearLocationNotification(
-              updateLocationCondition(next.locations, 'cercado_norte', 'Good'),
+              resetPastureAfterRepair(next.locations, 'cercado_norte'),
               'cercado_norte',
               'BrokenFence',
             ),
@@ -213,7 +214,7 @@ function reducer(state: GameState, action: GameAction): GameState {
             economy: { ...next.economy, treasury: next.economy.treasury - 2000 },
             notifications: withoutNotif,
             locations: clearLocationNotification(
-              updateLocationCondition(next.locations, 'cercado_norte', 'Good'),
+              resetPastureAfterRepair(next.locations, 'cercado_norte'),
               'cercado_norte',
               'BrokenFence',
             ),
@@ -247,7 +248,7 @@ function reducer(state: GameState, action: GameAction): GameState {
             prestige: Math.min(100, next.prestige + 1),
             notifications: withoutNotif,
             locations: clearLocationNotification(
-              updateLocationCondition(next.locations, 'cercado_norte', 'Regular'),
+              resetPastureAfterRepair(next.locations, 'cercado_norte'),
               'cercado_norte',
               'BrokenFence',
             ),
@@ -373,6 +374,7 @@ const RANCH_PROBLEM_DONE_KEY = 'herdade_ranch_problem_done';
 const PRESTIGE_KEY = 'herdade_prestige';
 const FENCE_CONSEQUENCE_KEY = 'herdade_fence_consequence';
 const ANIMALS_KEY = 'herdade_animals';
+const LOCATIONS_KEY = 'herdade_locations';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -404,6 +406,10 @@ function loadSavedState(): Partial<GameState> {
   try {
     const raw = localStorage.getItem(ANIMALS_KEY);
     if (raw) out.animals = JSON.parse(raw);
+  } catch {}
+  try {
+    const raw = localStorage.getItem(LOCATIONS_KEY);
+    if (raw) out.locations = JSON.parse(raw);
   } catch {}
   return out;
 }
@@ -462,6 +468,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
   }, [state.animals]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCATIONS_KEY, JSON.stringify(state.locations));
+    } catch {}
+  }, [state.locations]);
+
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
@@ -501,6 +513,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try { localStorage.removeItem(PRESTIGE_KEY); } catch {}
     try { localStorage.removeItem(FENCE_CONSEQUENCE_KEY); } catch {}
     try { localStorage.removeItem(ANIMALS_KEY); } catch {}
+    try { localStorage.removeItem(LOCATIONS_KEY); } catch {}
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };
