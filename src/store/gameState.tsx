@@ -19,7 +19,6 @@ import {
 } from '../services/locationService';
 import { simulateMonth } from '../core/simulation/SimulationEngine';
 import type { WeatherState } from '../types/weather';
-import type { BullightContract, ContractOffer } from '../types/contract';
 import { FIRST_CONTRACT_OFFER, nextContractInstanceId } from '../data/contracts';
 
 const INITIAL_WEATHER: WeatherState = {
