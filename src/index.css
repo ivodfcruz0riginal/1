@@ -206,6 +206,17 @@
 .daylight-pulse     { animation: daylight-pulse 22s ease-in-out infinite; }
 .dust-column        { animation: dust-column 12s ease-in-out infinite; }
 
+/* ── Routine notification toast ──────────────────────────────────────────────── */
+
+@keyframes routine-notif-enter {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.routine-notif {
+  animation: routine-notif-enter 0.4s ease-out forwards;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

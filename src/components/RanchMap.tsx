@@ -309,11 +309,30 @@ function useSoundScheduler(ambientEnabled: boolean) {
   }, [ambientEnabled]);
 }
 
+// ── Activity dot — shows when a location is currently occupied ────────────────
+
+const ActivityDot: React.FC<{ visible: boolean }> = ({ visible }) => {
+  if (!visible) return null;
+  return (
+    <div className="absolute top-1.5 right-1.5 z-20 pointer-events-none">
+      <div className="w-2 h-2 rounded-full bg-emerald-500/80 animate-pulse" />
+      <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-400/40 animate-ping" />
+    </div>
+  );
+};
+
 // ── Main component ────────────────────────────────────────────────────────────
 
-const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boolean }> = ({
+const RanchMap: React.FC<{
+  highlightedId?: string | null;
+  ambientEnabled?: boolean;
+  occupiedLocations?: Set<string>;
+  routineNotification?: string | null;
+}> = ({
   highlightedId,
   ambientEnabled = true,
+  occupiedLocations,
+  routineNotification,
 }) => {
   const [hovered, setHovered] = useState<string | null>(null);
   const { state, dismissNotification, setActiveLocation } = useGameState();
@@ -589,6 +608,7 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
             {notifications.cercado_norte && (
               <div className="absolute top-2 right-2 z-10"><NotificationBadge n={notifications.cercado_norte} /></div>
             )}
+            <ActivityDot visible={!!occupiedLocations?.has('cercado_norte')} />
             {highlightedId === 'cercado_norte' && (
               <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
             )}
@@ -638,6 +658,7 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
             {notifications.cercado_sul && (
               <div className="absolute top-2 right-2 z-10"><NotificationBadge n={notifications.cercado_sul} /></div>
             )}
+            <ActivityDot visible={!!occupiedLocations?.has('cercado_sul')} />
             {highlightedId === 'cercado_sul' && (
               <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
             )}
@@ -651,6 +672,7 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
             onClick={() => openLocation('tentadero')}
           >
             {notifications.tentadero && <NotificationBadge n={notifications.tentadero} />}
+            <ActivityDot visible={!!occupiedLocations?.has('tentadero')} />
             {highlightedId === 'tentadero' && (
               <div className="absolute inset-0 rounded-full border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
             )}
@@ -681,6 +703,7 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
             style={{ zIndex: 10 }}
           >
             {notifications.escritorio && <NotificationBadge n={notifications.escritorio} />}
+            <ActivityDot visible={!!occupiedLocations?.has('escritorio')} />
             {highlightedId === 'escritorio' && (
               <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
             )}
@@ -721,6 +744,7 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
             style={{ zIndex: 10 }}
           >
             {notifications.casa && <NotificationBadge n={notifications.casa} />}
+            <ActivityDot visible={!!occupiedLocations?.has('casa')} />
             <BuildingTooltip name="Casa Principal" hint="Residência da herdade" visible={hovered === 'casa'} />
             <div className="absolute inset-0 bg-black/30 translate-y-2 translate-x-1 rounded pointer-events-none" />
             <div className={`absolute inset-0 rounded shadow-lg border-2 transition-all duration-300 ${hovered === 'casa' ? 'bg-leather-700/95 border-gold/40 shadow-gold/15' : 'bg-leather-800/80 border-leather-600/50'}`}>
@@ -757,6 +781,7 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
             style={{ zIndex: 10 }}
           >
             {notifications.currais && <NotificationBadge n={notifications.currais} />}
+            <ActivityDot visible={!!occupiedLocations?.has('currais')} />
             {highlightedId === 'currais' && (
               <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
             )}
@@ -816,6 +841,19 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
               <p className="font-display text-xs text-gold/70 tracking-[0.3em] uppercase">Herdade da Ferraria</p>
             </div>
           </div>
+
+          {/* ── ROUTINE NOTIFICATION TOAST ── */}
+          {routineNotification && (
+            <div
+              key={routineNotification}
+              className="routine-notif absolute pointer-events-none"
+              style={{ top: '52px', left: '50%', zIndex: 30 }}
+            >
+              <div className="bg-leather-900/95 border border-leather-600/50 rounded-full px-4 py-1.5 shadow-lg backdrop-blur-sm whitespace-nowrap">
+                <p className="text-ivory/65 text-[11px] font-body">{routineNotification}</p>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>

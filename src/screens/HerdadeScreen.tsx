@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import RanchMap, { getTimeOfDay } from '../components/RanchMap';
 import MaioralDialogue from '../components/MaioralDialogue';
 import TasksPanel from '../components/TasksPanel';
 import LocationDetailPanel from '../components/LocationDetailPanel';
 import GuidedTour from '../components/GuidedTour';
 import { useGameState } from '../store/gameState';
+import { useDailyRoutine } from '../hooks/useDailyRoutine';
 
 const AMBIENT_KEY = 'herdade_ambient_enabled';
 
@@ -19,9 +20,15 @@ const HerdadeScreen: React.FC<Props> = ({ showTour, onTourComplete }) => {
     try { return localStorage.getItem(AMBIENT_KEY) !== '0'; } catch { return true; }
   });
 
-  const { state } = useGameState();
+  const { state, addGameEvent } = useGameState();
   const tod = getTimeOfDay(state.month, state.year);
   const weather = state.weather;
+
+  const handleDiaryNote = useCallback((text: string) => {
+    addGameEvent(text);
+  }, [addGameEvent]);
+
+  const routine = useDailyRoutine(state.month, state.year, handleDiaryNote);
 
   useEffect(() => {
     try { localStorage.setItem(AMBIENT_KEY, ambientEnabled ? '1' : '0'); } catch {}
@@ -72,7 +79,12 @@ const HerdadeScreen: React.FC<Props> = ({ showTour, onTourComplete }) => {
         </button>
       </div>
 
-      <RanchMap highlightedId={showTour ? tourHighlightId : null} ambientEnabled={ambientEnabled} />
+      <RanchMap
+        highlightedId={showTour ? tourHighlightId : null}
+        ambientEnabled={ambientEnabled}
+        occupiedLocations={routine.occupiedLocations}
+        routineNotification={routine.notification}
+      />
       <TasksPanel />
       <LocationDetailPanel />
       <MaioralDialogue />
