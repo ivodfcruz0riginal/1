@@ -19,6 +19,8 @@ import { applyMonthToEconomy } from '../../store/economyEngine';
 import { updateAnimals, type AnimalDiaryEvent } from './AnimalSimulationService';
 import { updateLocations, type LocationDiaryEvent } from './LocationSimulationService';
 import { updateStaff, type StaffDiaryEvent } from './StaffSimulationService';
+import { rollWeather } from './WeatherSimulationService';
+import type { WeatherState } from '../../types/weather';
 import { pickMonthlyDialogue } from '../../data/maioralDialogues';
 import {
   FENCE_CONSEQUENCE_DELAYED,
@@ -79,6 +81,7 @@ interface ClimateCtx extends DateCtx {
   droughtRisk: boolean;
   frostRisk: boolean;
   newSeason: boolean;
+  weather: WeatherState;
 }
 
 // ── Phase 1: Advance Date ─────────────────────────────────────────────────────
@@ -98,12 +101,13 @@ function phase1_advanceDate(state: GameState): DateCtx {
 // Evaluates climate conditions from the new season.
 // Downstream phases use these flags to apply world-state effects.
 
-function phase2_updateClimate(date: DateCtx): ClimateCtx {
+function phase2_updateClimate(date: DateCtx, weather: WeatherState): ClimateCtx {
   return {
     ...date,
     droughtRisk: date.season === 'Verão',
     frostRisk: date.season === 'Inverno',
     newSeason: date.season !== date.prevSeason,
+    weather,
   };
 }
 
@@ -121,6 +125,8 @@ function phase3_updatePastures(
     season: climate.season,
     droughtRisk: climate.droughtRisk,
     newSeason: climate.newSeason,
+    weatherPastureQualityDelta: climate.weather.pastureQualityDelta,
+    weatherWaterLevelDelta: climate.weather.waterLevelDelta,
   });
   return {
     locations: result.locations,
@@ -149,6 +155,8 @@ function phase4_updateAnimals(
     northCondition: norte?.condition ?? 'Good',
     southCondition: sul?.condition ?? 'Good',
     northHasBrokenFence: (norte?.notifications ?? []).includes('BrokenFence'),
+    weatherHydrationDelta: climate.weather.hydrationDelta,
+    weatherStressDelta: climate.weather.stressDelta,
   });
 
   return { animals, animalEvents: diaryEvents };
@@ -160,7 +168,8 @@ function phase4_updateAnimals(
 // monthly income/expenses, and appends the record to history.
 
 function phase5_updateEconomy(climate: ClimateCtx, state: GameState, feedingCostMod: number) {
-  return applyMonthToEconomy(state.economy, climate.month, climate.year, climate.season, feedingCostMod);
+  const combinedMod = feedingCostMod * climate.weather.feedingCostMod;
+  return applyMonthToEconomy(state.economy, climate.month, climate.year, climate.season, combinedMod);
 }
 
 // ── Phase 6: Resolve Pending Consequences ─────────────────────────────────────
@@ -207,6 +216,7 @@ function phase9_updateStaff(
     southCondition: sul?.condition ?? 'Good',
     hasBrokenFence: (norte?.notifications ?? []).includes('BrokenFence'),
     treasury: state.economy.treasury,
+    weatherFatigueDelta: climate.weather.fatigueDelta,
   });
 
   return { staff, staffEvents: diaryEvents };
@@ -232,6 +242,7 @@ function phase7_generateEvents(
   economicEvent: GameEvent | null,
   locationEvents: LocationDiaryEvent[],
   staffEvents: StaffDiaryEvent[],
+  weatherEvent: string,
 ): GameEvent[] {
   const events: GameEvent[] = [];
 
@@ -268,13 +279,16 @@ function phase7_generateEvents(
     });
   }
 
-  // 6. Staff observations (max 2, appended after world events)
+  // 6. Weather event (max 1 per month)
+  events.push({ id: nextId(), month: climate.month, year: climate.year, text: weatherEvent });
+
+  // 7. Staff observations (max 2, appended after world events)
   for (const ev of staffEvents) {
     events.push({ id: nextId(), month: climate.month, year: climate.year, text: ev.text });
   }
 
-  // Cap at 7 events (5 world + 2 staff)
-  return events.slice(0, 7);
+  // Cap at 8 events (world + 1 weather + 2 staff)
+  return events.slice(0, 8);
 }
 
 // ── Phase 8: Generate Monthly Report ─────────────────────────────────────────
@@ -343,8 +357,9 @@ export function simulateMonth(state: GameState): SimulationOutput {
   // Phase 1: Advance Date
   const date = phase1_advanceDate(state);
 
-  // Phase 2: Update Climate
-  const climate = phase2_updateClimate(date);
+  // Phase 2: Update Climate (includes rolling weather)
+  const { weather, diaryEvent: weatherDiaryEvent } = rollWeather(date.season);
+  const climate = phase2_updateClimate(date, weather);
 
   // Phase 3: Update Pastures
   const { locations, locationEvents, feedingCostMod } = phase3_updatePastures(climate, state);
@@ -370,6 +385,7 @@ export function simulateMonth(state: GameState): SimulationOutput {
     economicEvent,
     locationEvents,
     staffEvents,
+    weatherDiaryEvent,
   );
 
   // Notifications update
@@ -410,6 +426,7 @@ export function simulateMonth(state: GameState): SimulationOutput {
     hasOpenedBuildingThisMonth: false,
     phase: computePhase(pendingDialogue, pendingDecision, false),
     pendingFenceConsequence: nextFenceConsequence,
+    weather,
   };
 
   return {

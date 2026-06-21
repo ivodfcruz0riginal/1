@@ -3,7 +3,6 @@ import { useGameState } from '../store/gameState';
 import type { BuildingKey, BuildingNotification, LocationId } from '../store/gameState';
 
 export type TimeOfDay = 'manha' | 'tarde' | 'entardecer' | 'noite';
-export type WeatherType = 'sunny' | 'cloudy' | 'rain' | 'fog' | 'wind';
 
 // ── Ambient helpers ───────────────────────────────────────────────────────────
 
@@ -13,7 +12,6 @@ const MONTHS_ORDER = [
 ];
 
 export interface TimeInfo { label: string; time: string; period: TimeOfDay }
-export interface WeatherInfo { icon: string; temp: string; desc: string; type: WeatherType }
 
 export function getTimeOfDay(month: string, year: number): TimeInfo {
   const idx = MONTHS_ORDER.indexOf(month);
@@ -25,27 +23,6 @@ export function getTimeOfDay(month: string, year: number): TimeInfo {
     { label: 'Noite',       time: '21:30', period: 'noite' },
   ];
   return periods[hash];
-}
-
-export function getWeather(season: string, month: string): WeatherInfo {
-  const idx = MONTHS_ORDER.indexOf(month);
-  if (season === 'Verão') {
-    return { icon: '☀', temp: `${28 + (idx % 4)}°C`, desc: 'Seco, quente', type: 'sunny' };
-  }
-  if (season === 'Primavera') {
-    if (idx === 4) return { icon: '🌦', temp: '16°C', desc: 'Aguaceiros', type: 'rain' };
-    if (idx === 2) return { icon: '🌬', temp: '14°C', desc: 'Vento fresco', type: 'wind' };
-    return { icon: '⛅', temp: '18°C', desc: 'Sol e nuvens', type: 'cloudy' };
-  }
-  if (season === 'Outono') {
-    if (idx === 10) return { icon: '🌧', temp: '12°C', desc: 'Chuvoso', type: 'rain' };
-    if (idx === 8)  return { icon: '🌬', temp: '17°C', desc: 'Vento forte', type: 'wind' };
-    return { icon: '⛅', temp: '15°C', desc: 'Nublado', type: 'cloudy' };
-  }
-  // Inverno
-  if (idx === 11 || idx === 0) return { icon: '🌫', temp: '7°C', desc: 'Nevoeiro', type: 'fog' };
-  if (idx === 1) return { icon: '🌧', temp: '9°C', desc: 'Chuva', type: 'rain' };
-  return { icon: '⛅', temp: '10°C', desc: 'Nublado, frio', type: 'cloudy' };
 }
 
 // ── Pre-computed ambient data (stable across renders) ─────────────────────────
@@ -186,10 +163,10 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
   const { notifications } = state;
 
   const tod = getTimeOfDay(state.month, state.year);
-  const weather = getWeather(state.season, state.month);
+  const weather = state.weather;
   const showRain = ambientEnabled && (weather.type === 'rain');
   const showFog  = ambientEnabled && (weather.type === 'fog');
-  const showWind = ambientEnabled && (weather.type === 'wind');
+  const showWind = ambientEnabled && (weather.type === 'wind' || weather.type === 'cold');
 
   const hover = (key: string) => () => setHovered(key);
   const unhover = () => setHovered(null);

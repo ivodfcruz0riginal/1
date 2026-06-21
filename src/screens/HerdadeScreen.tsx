@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import RanchMap, { getTimeOfDay, getWeather } from '../components/RanchMap';
+import RanchMap, { getTimeOfDay } from '../components/RanchMap';
 import MaioralDialogue from '../components/MaioralDialogue';
 import TasksPanel from '../components/TasksPanel';
 import LocationDetailPanel from '../components/LocationDetailPanel';
@@ -21,7 +21,7 @@ const HerdadeScreen: React.FC<Props> = ({ showTour, onTourComplete }) => {
 
   const { state } = useGameState();
   const tod = getTimeOfDay(state.month, state.year);
-  const weather = getWeather(state.season, state.month);
+  const weather = state.weather;
 
   useEffect(() => {
     try { localStorage.setItem(AMBIENT_KEY, ambientEnabled ? '1' : '0'); } catch {}

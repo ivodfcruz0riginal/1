@@ -11,6 +11,7 @@ export interface StaffContext {
   southCondition: LocationCondition;
   hasBrokenFence: boolean;
   treasury: number;
+  weatherFatigueDelta: number;
 }
 
 // ── Output ────────────────────────────────────────────────────────────────────
@@ -138,6 +139,7 @@ function updateMember(member: StaffMember, ctx: StaffContext): StaffMember {
   if (ctx.season === 'Inverno') fatigueDelta += 2;
   if (ctx.hasBrokenFence) fatigueDelta += 3;
   if (ctx.northCondition === 'Poor' || ctx.northCondition === 'Damaged') fatigueDelta += 2;
+  fatigueDelta += ctx.weatherFatigueDelta;
   // High fatigue recovery is slower — recovery only happens when fatigue is high
   // but presently fatigue always increases (no rest mechanic yet); cap at 85
   const fatigue = clamp(member.fatigue + fatigueDelta, 0, 85);

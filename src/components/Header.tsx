@@ -136,6 +136,14 @@ const Header: React.FC = () => {
                 <span className="font-display text-base text-gold font-semibold">{state.season}</span>
               </div>
             </div>
+            <div className="w-px h-8 bg-gold/20 mx-2" />
+            <div className="flex flex-col items-center">
+              <span className="text-ivory/40 text-[10px] font-body uppercase tracking-wider">Tempo</span>
+              <div className="flex items-center gap-1.5">
+                <span>{state.weather.icon}</span>
+                <span className="font-display text-base text-ivory font-semibold">{state.weather.temp}</span>
+              </div>
+            </div>
           </div>
 
           {/* Advance Month button */}

@@ -5,6 +5,7 @@ import type { DailyTask } from '../data/dailyTasks';
 import type { Decision, DecisionCategory } from '../data/decisions';
 import type { Location, LocationId, LocationCondition, LocationNotification } from '../types/location';
 import type { EconomyState } from './economyEngine';
+import type { WeatherState } from '../types/weather';
 
 export type GamePhase =
   | 'MonthStart'
@@ -47,6 +48,7 @@ export type { DailyTask };
 export type { StaffMember };
 export type { Decision, DecisionCategory };
 export type { Location, LocationId, LocationCondition, LocationNotification };
+export type { WeatherState };
 
 export interface DecisionRecord {
   instanceId: string;
@@ -84,6 +86,7 @@ export interface GameState {
   firstRanchProblemCompleted: boolean;
   prestige: number;
   pendingFenceConsequence: 'delayed' | 'ignored' | null;
+  weather: WeatherState;
 }
 
 export type GameAction =

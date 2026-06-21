@@ -18,6 +18,20 @@ import {
   resetPastureAfterRepair,
 } from '../services/locationService';
 import { simulateMonth } from '../core/simulation/SimulationEngine';
+import type { WeatherState } from '../types/weather';
+
+const INITIAL_WEATHER: WeatherState = {
+  type: 'cloudy',
+  icon: '⛅',
+  temp: '18°C',
+  desc: 'Sol e nuvens',
+  pastureQualityDelta: 1,
+  waterLevelDelta: 1,
+  feedingCostMod: 1.00,
+  hydrationDelta: 0,
+  stressDelta: 0,
+  fatigueDelta: 0,
+};
 
 // ── Re-export types ───────────────────────────────────────────────────────────
 
@@ -39,6 +53,7 @@ export type {
   LocationCondition,
   LocationNotification,
   StaffMember,
+  WeatherState,
   GameState,
   GameAction,
 } from './gameTypes';
@@ -342,6 +357,7 @@ const INITIAL_STATE: GameState = {
   firstRanchProblemCompleted: false,
   prestige: 42,
   pendingFenceConsequence: null,
+  weather: INITIAL_WEATHER,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -379,6 +395,7 @@ const FENCE_CONSEQUENCE_KEY = 'herdade_fence_consequence';
 const ANIMALS_KEY = 'herdade_animals';
 const LOCATIONS_KEY = 'herdade_locations';
 const STAFF_KEY = 'herdade_staff';
+const WEATHER_KEY = 'herdade_weather';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -418,6 +435,10 @@ function loadSavedState(): Partial<GameState> {
   try {
     const raw = localStorage.getItem(STAFF_KEY);
     if (raw) out.staff = JSON.parse(raw);
+  } catch {}
+  try {
+    const raw = localStorage.getItem(WEATHER_KEY);
+    if (raw) out.weather = JSON.parse(raw) as WeatherState;
   } catch {}
   return out;
 }
@@ -488,6 +509,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
   }, [state.staff]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(WEATHER_KEY, JSON.stringify(state.weather));
+    } catch {}
+  }, [state.weather]);
+
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
@@ -529,6 +556,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try { localStorage.removeItem(ANIMALS_KEY); } catch {}
     try { localStorage.removeItem(LOCATIONS_KEY); } catch {}
     try { localStorage.removeItem(STAFF_KEY); } catch {}
+    try { localStorage.removeItem(WEATHER_KEY); } catch {}
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };

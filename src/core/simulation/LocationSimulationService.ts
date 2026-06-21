@@ -8,6 +8,8 @@ export interface LocationClimate {
   season: Season;
   droughtRisk: boolean;
   newSeason: boolean;
+  weatherPastureQualityDelta: number;
+  weatherWaterLevelDelta: number;
 }
 
 // ── Output types ──────────────────────────────────────────────────────────────
@@ -81,6 +83,7 @@ function updateBarragem(
   else if (climate.season === 'Verão') delta = -10;
   else if (climate.season === 'Outono') delta = 5;
   else delta = -3; // Inverno
+  delta += climate.weatherWaterLevelDelta;
 
   const newLevel = clamp(prevLevel + delta);
   const newCondition = qualityToCondition(newLevel);
@@ -123,6 +126,7 @@ function updatePasture(
   else if (climate.season === 'Verão') pqDelta = -8;
   else if (climate.season === 'Outono') pqDelta = 4;
   else pqDelta = -4; // Inverno
+  pqDelta += climate.weatherPastureQualityDelta;
   if (capacityRatio > 0.8) pqDelta -= 5; // overcrowding degrades pasture
   if (hasBrokenFence) pqDelta -= 3; // fence stress accelerates degradation
   const newPQ = clamp(prevPQ + pqDelta);

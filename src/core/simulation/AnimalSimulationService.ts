@@ -11,6 +11,8 @@ export interface AnimalContext {
   northCondition: LocationCondition;
   southCondition: LocationCondition;
   northHasBrokenFence: boolean;
+  weatherHydrationDelta: number;
+  weatherStressDelta: number;
 }
 
 // ── Output types ──────────────────────────────────────────────────────────────
@@ -106,6 +108,7 @@ function updateAnimal(
   else if (ctx.season === 'Inverno') hydDelta -= 2;
   else if (ctx.season === 'Primavera') hydDelta += 3;
   else hydDelta += 1;                                         // Outono
+  hydDelta += ctx.weatherHydrationDelta;
   const newHydration = clamp(prev.hydration + hydDelta);
 
   // ── Stress ──────────────────────────────────────────────────────────────────
@@ -117,6 +120,7 @@ function updateAnimal(
   else if (encCondition === 'Good' || encCondition === 'Excellent') stressDelta -= 3;
   if (ctx.season === 'Verão') stressDelta += 3;
   if (isOld) stressDelta += 2;
+  stressDelta += ctx.weatherStressDelta;
   const newStress = clamp(prev.stress + stressDelta);
 
   // ── Fatigue ─────────────────────────────────────────────────────────────────
