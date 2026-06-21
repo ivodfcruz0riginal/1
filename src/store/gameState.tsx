@@ -9,7 +9,7 @@ import { animals as initialAnimals } from '../data/animals';
 import { GREETING_DIALOGUE, pickMonthlyDialogue } from '../data/maioralDialogues';
 import type { DialogueTemplate } from '../data/maioralDialogues';
 import { generateDailyTasks } from '../data/dailyTasks';
-import { OPENING_DECISION, pickDecision, nextDecisionInstanceId } from '../data/decisions';
+import { OPENING_DECISION, NORTH_FENCE_DECISION, pickDecision, nextDecisionInstanceId } from '../data/decisions';
 import { INITIAL_LOCATIONS } from '../data/locations';
 import {
   updateLocationCondition,
@@ -178,6 +178,7 @@ function advanceMonthState(state: GameState): GameState {
     openingSequenceCompleted: state.openingSequenceCompleted,
     guidedTourCompleted: state.guidedTourCompleted,
     firstDecisionCompleted: state.firstDecisionCompleted,
+    firstRanchProblemCompleted: state.firstRanchProblemCompleted,
   };
 }
 
@@ -236,13 +237,43 @@ function reducer(state: GameState, action: GameAction): GameState {
         result,
         important: state.pendingDecision.important,
       };
-      return {
+      let next: GameState = {
         ...state,
         pendingDecision: null,
         decisionHistory: [record, ...state.decisionHistory],
         phase: computePhase(state.pendingDialogue, null, state.hasOpenedBuildingThisMonth),
         firstDecisionCompleted: true,
       };
+
+      // North fence special effects
+      if (state.pendingDecision.id === 'inf_01') {
+        next = { ...next, firstRanchProblemCompleted: true };
+        const diaryTexts = [
+          'Vedação do Cercado Norte reparada. Custo: 1.500€.',
+          'Reparação da vedação do Cercado Norte adiada para o próximo mês.',
+          'Problema na vedação do Cercado Norte ignorado.',
+        ];
+        const eventText = diaryTexts[choiceIdx] ?? diaryTexts[2];
+        const ev: GameEvent = { id: nextId(), month: state.month, year: state.year, text: eventText };
+        next = { ...next, eventLog: [ev, ...next.eventLog].slice(0, 20) };
+
+        if (choiceIdx === 0) {
+          const withoutNotif = { ...next.notifications };
+          delete withoutNotif.cercado_norte;
+          next = {
+            ...next,
+            economy: { ...next.economy, treasury: next.economy.treasury - 1500 },
+            notifications: withoutNotif,
+            locations: clearLocationNotification(
+              updateLocationCondition(next.locations, 'cercado_norte', 'Good'),
+              'cercado_norte',
+              'BrokenFence',
+            ),
+          };
+        }
+      }
+
+      return next;
     }
     case 'SET_ACTIVE_LOCATION': {
       const opened = action.id !== null ? true : state.hasOpenedBuildingThisMonth;
@@ -271,8 +302,21 @@ function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, openingSequenceCompleted: true };
     case 'COMPLETE_TOUR':
       return { ...state, guidedTourCompleted: true };
+    case 'TRIGGER_RANCH_PROBLEM': {
+      const updatedLocations = addLocationNotification(
+        updateLocationCondition(state.locations, 'cercado_norte', 'Poor'),
+        'cercado_norte',
+        'BrokenFence',
+      );
+      return {
+        ...state,
+        pendingDecision: NORTH_FENCE_DECISION,
+        notifications: { ...state.notifications, cercado_norte: { icon: '⚠', label: 'Vedação fraca' } },
+        locations: updatedLocations,
+      };
+    }
     case 'NEW_GAME':
-      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false, firstDecisionCompleted: false };
+      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false, firstDecisionCompleted: false, firstRanchProblemCompleted: false };
     default:
       return state;
   }
@@ -307,6 +351,7 @@ const INITIAL_STATE: GameState = {
   openingSequenceCompleted: false,
   guidedTourCompleted: false,
   firstDecisionCompleted: false,
+  firstRanchProblemCompleted: false,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -328,6 +373,7 @@ interface GameStateContextValue {
   addGameEvent: (text: string) => void;
   completeIntro: () => void;
   completeTour: () => void;
+  triggerRanchProblem: () => void;
   startNewGame: () => void;
 }
 
@@ -337,6 +383,7 @@ const DECISIONS_STORAGE_KEY = 'herdade_decisions';
 const OPENING_DONE_KEY = 'herdade_opening_done';
 const TOUR_DONE_KEY = 'herdade_tour_done';
 const FIRST_DECISION_DONE_KEY = 'herdade_first_decision_done';
+const RANCH_PROBLEM_DONE_KEY = 'herdade_ranch_problem_done';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -352,6 +399,9 @@ function loadSavedState(): Partial<GameState> {
   } catch {}
   try {
     out.firstDecisionCompleted = localStorage.getItem(FIRST_DECISION_DONE_KEY) === '1';
+  } catch {}
+  try {
+    out.firstRanchProblemCompleted = localStorage.getItem(RANCH_PROBLEM_DONE_KEY) === '1';
   } catch {}
   return out;
 }
@@ -386,6 +436,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
   }, [state.firstDecisionCompleted]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(RANCH_PROBLEM_DONE_KEY, state.firstRanchProblemCompleted ? '1' : '0');
+    } catch {}
+  }, [state.firstRanchProblemCompleted]);
+
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
@@ -415,10 +471,13 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     dispatch({ type: 'COMPLETE_INTRO' });
   const completeTour = () =>
     dispatch({ type: 'COMPLETE_TOUR' });
+  const triggerRanchProblem = () =>
+    dispatch({ type: 'TRIGGER_RANCH_PROBLEM' });
   const startNewGame = () => {
     try { localStorage.removeItem(OPENING_DONE_KEY); } catch {}
     try { localStorage.removeItem(TOUR_DONE_KEY); } catch {}
     try { localStorage.removeItem(FIRST_DECISION_DONE_KEY); } catch {}
+    try { localStorage.removeItem(RANCH_PROBLEM_DONE_KEY); } catch {}
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };
@@ -429,7 +488,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       completeTask, ignoreTask, resolveDecision,
       setActiveLocation, updateLocationCondition, addLocationNotification,
       clearLocationNotification, updateLocationOccupation, setPhase, addGameEvent,
-      completeIntro, completeTour, startNewGame,
+      completeIntro, completeTour, triggerRanchProblem, startNewGame,
     }}>
       {children}
     </GameStateContext.Provider>

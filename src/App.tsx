@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -68,7 +68,7 @@ const Layout: React.FC<LayoutProps> = ({ flowStep, onTourComplete }) => (
 // ── Game root — single flow decision point ────────────────────────────────────
 
 const GameRoot: React.FC = () => {
-  const { state, completeIntro } = useGameState();
+  const { state, completeIntro, triggerRanchProblem } = useGameState();
 
   // Read URL debug flags once at mount — force flags are consumed when the
   // matching overlay sequence completes, so they never loop.
@@ -91,6 +91,19 @@ const GameRoot: React.FC = () => {
     showOpening ? 'OPENING'
     : showTour  ? 'GUIDED_TOUR'
     : stateStep; // 'FIRST_DECISION' or 'NORMAL_GAME'
+
+  // ── Ranch problem trigger ─────────────────────────────────────────────────
+  // Fires once when the player first reaches NORMAL_GAME and has no pending
+  // decision. The DecisionWindow then shows the fence problem modally.
+  useEffect(() => {
+    if (
+      flowStep === 'NORMAL_GAME' &&
+      !state.firstRanchProblemCompleted &&
+      state.pendingDecision === null
+    ) {
+      triggerRanchProblem();
+    }
+  }, [flowStep, state.firstRanchProblemCompleted, state.pendingDecision]);
 
   // ── Sequence completion handlers ──────────────────────────────────────────
 

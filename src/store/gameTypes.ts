@@ -78,6 +78,7 @@ export interface GameState {
   openingSequenceCompleted: boolean;
   guidedTourCompleted: boolean;
   firstDecisionCompleted: boolean;
+  firstRanchProblemCompleted: boolean;
 }
 
 export type GameAction =
@@ -96,4 +97,5 @@ export type GameAction =
   | { type: 'ADD_GAME_EVENT'; text: string }
   | { type: 'COMPLETE_INTRO' }
   | { type: 'COMPLETE_TOUR' }
+  | { type: 'TRIGGER_RANCH_PROBLEM' }
   | { type: 'NEW_GAME' };

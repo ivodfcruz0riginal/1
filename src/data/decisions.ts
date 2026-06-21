@@ -251,6 +251,27 @@ export function pickDecision(excludeIds: string[] = []): Decision {
 
 export const OPENING_DECISION: Decision = DECISION_POOL.find(d => d.id === 'ge_01')!;
 
+// ── One-off scripted decisions (not in the random pool) ───────────────────────
+
+export const NORTH_FENCE_DECISION: Decision = {
+  id: 'inf_01',
+  title: 'Vedação do Cercado Norte',
+  category: 'Gestão',
+  description: 'Patrão, estive no Cercado Norte esta manhã. A vedação está fraca. Ainda aguenta, mas se vier vento forte podemos ter problemas.',
+  imageHint: 'Vedação com postes inclinados num cercado alentejano',
+  choices: [
+    'Reparar já.',
+    'Adiar para o próximo mês.',
+    'Ignorar.',
+  ],
+  consequences: [
+    'Vedação reparada. A herdade está segura. Custo: 1.500€.',
+    'Reparação adiada. A vedação continua fraca.',
+    'Problema ignorado. O risco persiste.',
+  ],
+  important: true,
+};
+
 export function nextDecisionInstanceId(): string {
   return `dec-${++_decisionCounter}-${Date.now()}`;
 }
