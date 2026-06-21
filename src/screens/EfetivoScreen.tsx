@@ -192,7 +192,7 @@ const EfetivoScreen: React.FC = () => {
               <p className="text-ivory/30 text-sm font-body mt-1">Tente ajustar os filtros ou a pesquisa</p>
             </div>
           ) : (
-            <div className={`grid gap-3 ${selected ? 'grid-cols-2 xl:grid-cols-3' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'}`}>
+            <div className={`grid gap-3 ${selected ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'}`}>
               {filtered.map(animal => (
                 <AnimalCard
                   key={animal.id}
@@ -209,7 +209,7 @@ const EfetivoScreen: React.FC = () => {
 
         {/* Detail panel */}
         {selected && (
-          <div className="w-80 shrink-0 overflow-hidden">
+          <div className="w-96 shrink-0 overflow-hidden">
             <AnimalDetailPanel
               animal={selected}
               fatherName={selected.fatherId ? animalById[selected.fatherId]?.name : undefined}
