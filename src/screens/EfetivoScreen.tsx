@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Animal, AnimalCategory } from '../types/animal';
 import { useGameState } from '../store/gameState';
 import AnimalCard from '../components/AnimalCard';
-import AnimalDetailPanel from '../components/AnimalDetailPanel';
+import AnimalProfile from '../components/AnimalProfile';
 
 type FilterKey =
   | 'todos'
@@ -183,8 +183,8 @@ const EfetivoScreen: React.FC = () => {
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Grid */}
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Animal list — compressed to a sidebar when a profile is open */}
+        <div className={`${selected ? 'w-60 shrink-0 border-r border-leather-700/30' : 'flex-1'} overflow-y-auto p-3`}>
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <p className="text-ivory/30 text-4xl mb-3">🐂</p>
@@ -192,7 +192,7 @@ const EfetivoScreen: React.FC = () => {
               <p className="text-ivory/30 text-sm font-body mt-1">Ajuste os filtros ou a pesquisa</p>
             </div>
           ) : (
-            <div className={`grid gap-3 ${selected ? 'grid-cols-2 xl:grid-cols-3' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'}`}>
+            <div className={`grid gap-2.5 ${selected ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'}`}>
               {filtered.map(animal => (
                 <AnimalCard
                   key={animal.id}
@@ -207,13 +207,12 @@ const EfetivoScreen: React.FC = () => {
           )}
         </div>
 
-        {/* Detail panel */}
+        {/* Full profile panel */}
         {selected && (
-          <div className="w-80 shrink-0 overflow-hidden">
-            <AnimalDetailPanel
+          <div className="flex-1 overflow-hidden border-l border-leather-700/20">
+            <AnimalProfile
               animal={selected}
-              fatherName={selected.fatherId ? animalById[selected.fatherId]?.name : undefined}
-              motherName={selected.motherId ? animalById[selected.motherId]?.name : undefined}
+              allAnimals={allAnimals}
               onClose={() => setSelectedId(null)}
             />
           </div>
