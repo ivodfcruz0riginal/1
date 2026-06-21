@@ -21,6 +21,8 @@ import {
   clearLocationNotification,
   updateLocationOccupation,
 } from '../services/locationService';
+import type { MonthlyReport } from '../core/reports/MonthlyReport';
+import { monthlyReportService } from '../core/reports/MonthlyReportService';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -94,6 +96,7 @@ export interface GameState {
   prestige: number;
   phase: GamePhase;
   hasOpenedBuildingThisMonth: boolean;
+  monthlyReports: MonthlyReport[];
 }
 
 type GameAction =
@@ -108,7 +111,8 @@ type GameAction =
   | { type: 'ADD_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
   | { type: 'CLEAR_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
   | { type: 'UPDATE_LOCATION_OCCUPATION'; id: LocationId; occupation: number }
-  | { type: 'SET_PHASE'; phase: GamePhase };
+  | { type: 'SET_PHASE'; phase: GamePhase }
+  | { type: 'ACKNOWLEDGE_REPORT'; id: string };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -248,6 +252,9 @@ function advanceMonthState(state: GameState): GameState {
     ? pickDecision(state.decisionHistory.slice(0, 3).map(r => r.decisionId))
     : null;
 
+  const newReport = monthlyReportService.generateMonthlyReport({ ...state, month: nextMonth, year: nextYear, season: nextSeason });
+  const newReports = [newReport, ...state.monthlyReports].slice(0, 24);
+
   return {
     year: nextYear,
     month: nextMonth,
@@ -266,6 +273,7 @@ function advanceMonthState(state: GameState): GameState {
     prestige: newPrestige,
     phase: computePhase(nextDialogue, nextDecision, false),
     hasOpenedBuildingThisMonth: false,
+    monthlyReports: newReports,
   };
 }
 
@@ -349,6 +357,11 @@ function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, locations: updateLocationOccupation(state.locations, action.id, action.occupation) };
     case 'SET_PHASE':
       return { ...state, phase: action.phase };
+    case 'ACKNOWLEDGE_REPORT':
+      return {
+        ...state,
+        monthlyReports: monthlyReportService.acknowledgeReport(state.monthlyReports, action.id),
+      };
     default:
       return state;
   }
@@ -401,6 +414,7 @@ const INITIAL_STATE: GameState = {
   prestige: 250,
   phase: 'MonthStart',
   hasOpenedBuildingThisMonth: false,
+  monthlyReports: [],
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -419,6 +433,7 @@ interface GameStateContextValue {
   clearLocationNotification: (id: LocationId, notification: LocationNotification) => void;
   updateLocationOccupation: (id: LocationId, occupation: number) => void;
   setPhase: (phase: GamePhase) => void;
+  acknowledgeReport: (id: string) => void;
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
@@ -453,6 +468,8 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     dispatch({ type: 'UPDATE_LOCATION_OCCUPATION', id, occupation });
   const setPhase = (phase: GamePhase) =>
     dispatch({ type: 'SET_PHASE', phase });
+  const acknowledgeReport = (id: string) =>
+    dispatch({ type: 'ACKNOWLEDGE_REPORT', id });
 
   return (
     <GameStateContext.Provider value={{
@@ -469,6 +486,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       clearLocationNotification: clearLocationNotificationFn,
       updateLocationOccupation: updateLocationOccupationFn,
       setPhase,
+      acknowledgeReport,
     }}>
       {children}
     </GameStateContext.Provider>

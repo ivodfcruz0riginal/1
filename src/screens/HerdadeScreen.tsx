@@ -5,6 +5,7 @@ import TasksPanel from '../components/TasksPanel';
 import DirectorCard from '../components/DirectorCard';
 import LocationDetailPanel from '../components/LocationDetailPanel';
 import GameplayObjectiveCard from '../components/GameplayObjectiveCard';
+import MonthlyReportCard from '../components/MonthlyReportCard';
 import { useDayCycle } from '../hooks/useDayCycle';
 
 const HerdadeScreen: React.FC = () => {
@@ -33,6 +34,7 @@ const HerdadeScreen: React.FC = () => {
       <TasksPanel />
       <DirectorCard />
       <GameplayObjectiveCard />
+      <MonthlyReportCard />
       <LocationDetailPanel />
       <MaioralDialogue />
     </>
