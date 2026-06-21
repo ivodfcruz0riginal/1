@@ -18,7 +18,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     locationId: 'currais',
     name: 'Currais',
-    text: 'Aqui vemos de perto o que no campo apenas se adivinha. Cada animal passa por aqui antes de partir.',
+    text: 'Aqui vemos de perto o que no campo apenas se adivinha.',
   },
   {
     locationId: 'cercado_norte',
@@ -28,17 +28,17 @@ const TOUR_STEPS: TourStep[] = [
   {
     locationId: 'cercado_sul',
     name: 'Cercado Sul',
-    text: 'Pastagem secundária, mas não menos importante. Os animais em quarentena ficam por aqui.',
+    text: 'As vacas e novilhas mostram aqui o futuro da casa.',
   },
   {
     locationId: 'tentadero',
     name: 'Tentadero',
-    text: 'É aqui que se decide o futuro da ganadaria. O que não passa o tentadero não vai mais longe.',
+    text: 'É aqui que se decide o futuro da ganadaria.',
   },
   {
     locationId: null,
     name: 'Barragem',
-    text: 'Sem água não há pasto. Sem pasto não há toiro. A barragem é o coração da herdade.',
+    text: 'Sem água não há pasto. Sem pasto não há toiro.',
   },
   {
     locationId: 'embarque',
@@ -46,22 +46,6 @@ const TOUR_STEPS: TourStep[] = [
     text: 'Daqui partem os animais quando chega o dia de mostrar a casa.',
   },
 ];
-
-const TOUR_STORAGE_KEY = 'herdade_tour_done';
-
-export function isTourDone(): boolean {
-  try {
-    return localStorage.getItem(TOUR_STORAGE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-export function markTourDone(): void {
-  try {
-    localStorage.setItem(TOUR_STORAGE_KEY, '1');
-  } catch {}
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -73,18 +57,16 @@ interface Props {
 }
 
 const GuidedTour: React.FC<Props> = ({ onHighlight, onComplete }) => {
-  const { addGameEvent } = useGameState();
+  const { addGameEvent, completeTour } = useGameState();
   const [step, setStep] = useState(0);
   const [phase, setPhase] = useState<Phase>('touring');
   const [visible, setVisible] = useState(false);
 
-  // Fade in on mount
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 50);
     return () => clearTimeout(t);
   }, []);
 
-  // Sync highlight whenever step changes
   useEffect(() => {
     if (phase === 'touring') {
       onHighlight(TOUR_STEPS[step].locationId);
@@ -101,14 +83,14 @@ const GuidedTour: React.FC<Props> = ({ onHighlight, onComplete }) => {
     }
   };
 
-  const handleSkip = () => complete();
+  const handleSkip = () => finish();
 
-  const handleFinish = () => complete();
+  const handleFinish = () => finish();
 
-  const complete = () => {
+  const finish = () => {
     onHighlight(null);
     addGameEvent('O Maioral apresentou a Herdade ao novo ganadeiro.');
-    markTourDone();
+    completeTour();
     setVisible(false);
     setPhase('exiting');
     setTimeout(onComplete, 700);
@@ -140,7 +122,6 @@ const GuidedTour: React.FC<Props> = ({ onHighlight, onComplete }) => {
 
         {/* Header */}
         <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-leather-700/40">
-          {/* Campino avatar */}
           <div className="relative shrink-0">
             <div className="w-10 h-10 rounded-full bg-leather-700/70 border-2 border-gold/30 flex items-center justify-center overflow-hidden">
               <div className="absolute bottom-0 inset-x-0 h-5 bg-leather-800/80" />
@@ -160,7 +141,6 @@ const GuidedTour: React.FC<Props> = ({ onHighlight, onComplete }) => {
             </p>
           </div>
 
-          {/* Step counter / final badge */}
           <div className="ml-auto flex items-center gap-2">
             {!isFinal && (
               <span className="text-ivory/20 text-[9px] font-body uppercase tracking-widest">
@@ -185,7 +165,7 @@ const GuidedTour: React.FC<Props> = ({ onHighlight, onComplete }) => {
           <div className="relative pl-3 border-l-2 border-gold/25">
             <p className="text-ivory/80 text-sm font-body leading-relaxed italic">
               {isFinal
-                ? '"A visita está feita, Patrão. A Herdade está nas suas mãos."'
+                ? '"A Herdade está nas suas mãos."'
                 : `"${currentStep.text}"`}
             </p>
           </div>

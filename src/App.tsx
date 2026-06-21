@@ -4,7 +4,6 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import DecisionWindow from './components/DecisionWindow';
 import OpeningSequence from './components/OpeningSequence';
-import { isTourDone } from './components/GuidedTour';
 import HerdadeScreen from './screens/HerdadeScreen';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
@@ -16,7 +15,6 @@ import { GameStateProvider, useGameState } from './store/gameState';
 
 const Layout: React.FC<{ showTour: boolean; onTourComplete: () => void }> = ({ showTour, onTourComplete }) => (
   <div className="min-h-screen bg-leather-900 flex overflow-hidden">
-    {/* Leather texture overlay */}
     <div
       className="fixed inset-0 pointer-events-none opacity-[0.04]"
       style={{
@@ -47,32 +45,34 @@ const Layout: React.FC<{ showTour: boolean; onTourComplete: () => void }> = ({ s
       </div>
     </div>
 
-    {/* Decision Window — global, floats above all screens */}
     <DecisionWindow />
   </div>
 );
 
-// ── Game root — reads game state, mounts opening and tour ─────────────────────
+// ── Game root — inside GameStateProvider, reads state to control sequences ────
 
 const GameRoot: React.FC = () => {
   const { state, completeIntro } = useGameState();
 
-  // ?intro=true forces the opening sequence regardless of completion state
-  const forceIntro = new URLSearchParams(window.location.search).get('intro') === 'true';
+  const params = new URLSearchParams(window.location.search);
+  const forceIntro = params.get('intro') === 'true';
+  const forceTour  = params.get('tour')  === 'true';
 
-  // Local visibility state — starts true when opening not yet done (or forced)
-  const [showOpening, setShowOpening] = useState(
-    () => !state.openingSequenceCompleted || forceIntro
-  );
+  // Opening: show when not completed, or forced via ?intro=true
+  const openingDone = state.openingSequenceCompleted && !forceIntro;
+  const [showOpening, setShowOpening] = useState(() => !openingDone);
 
+  // Tour: show when opening already done + tour not done, or forced via ?tour=true
   const [showTour, setShowTour] = useState(
-    () => state.openingSequenceCompleted && !isTourDone()
+    () => (openingDone && !state.guidedTourCompleted) || forceTour
   );
 
   const handleOpeningComplete = () => {
-    completeIntro();          // persists to game state + localStorage
+    completeIntro();
     setShowOpening(false);
-    if (!isTourDone()) setShowTour(true);
+    if (!state.guidedTourCompleted || forceTour) {
+      setShowTour(true);
+    }
   };
 
   const handleTourComplete = () => setShowTour(false);

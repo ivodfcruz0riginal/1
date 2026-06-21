@@ -76,6 +76,7 @@ export interface GameState {
   phase: GamePhase;
   hasOpenedBuildingThisMonth: boolean;
   openingSequenceCompleted: boolean;
+  guidedTourCompleted: boolean;
 }
 
 export type GameAction =
@@ -93,4 +94,5 @@ export type GameAction =
   | { type: 'SET_PHASE'; phase: GamePhase }
   | { type: 'ADD_GAME_EVENT'; text: string }
   | { type: 'COMPLETE_INTRO' }
+  | { type: 'COMPLETE_TOUR' }
   | { type: 'NEW_GAME' };

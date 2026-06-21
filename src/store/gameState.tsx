@@ -265,8 +265,10 @@ function reducer(state: GameState, action: GameAction): GameState {
     }
     case 'COMPLETE_INTRO':
       return { ...state, openingSequenceCompleted: true };
+    case 'COMPLETE_TOUR':
+      return { ...state, guidedTourCompleted: true };
     case 'NEW_GAME':
-      return { ...INITIAL_STATE, openingSequenceCompleted: false };
+      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false };
     default:
       return state;
   }
@@ -299,6 +301,7 @@ const INITIAL_STATE: GameState = {
   hasOpenedBuildingThisMonth: false,
   phase: 'MonthStart' as GamePhase,
   openingSequenceCompleted: false,
+  guidedTourCompleted: false,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -319,6 +322,7 @@ interface GameStateContextValue {
   setPhase: (phase: GamePhase) => void;
   addGameEvent: (text: string) => void;
   completeIntro: () => void;
+  completeTour: () => void;
   startNewGame: () => void;
 }
 
@@ -326,6 +330,7 @@ const GameStateContext = createContext<GameStateContextValue | null>(null);
 
 const DECISIONS_STORAGE_KEY = 'herdade_decisions';
 const OPENING_DONE_KEY = 'herdade_opening_done';
+const TOUR_DONE_KEY = 'herdade_tour_done';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -335,6 +340,9 @@ function loadSavedState(): Partial<GameState> {
   } catch {}
   try {
     out.openingSequenceCompleted = localStorage.getItem(OPENING_DONE_KEY) === '1';
+  } catch {}
+  try {
+    out.guidedTourCompleted = localStorage.getItem(TOUR_DONE_KEY) === '1';
   } catch {}
   return out;
 }
@@ -356,6 +364,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       localStorage.setItem(OPENING_DONE_KEY, state.openingSequenceCompleted ? '1' : '0');
     } catch {}
   }, [state.openingSequenceCompleted]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(TOUR_DONE_KEY, state.guidedTourCompleted ? '1' : '0');
+    } catch {}
+  }, [state.guidedTourCompleted]);
 
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
@@ -384,8 +398,11 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     dispatch({ type: 'ADD_GAME_EVENT', text });
   const completeIntro = () =>
     dispatch({ type: 'COMPLETE_INTRO' });
+  const completeTour = () =>
+    dispatch({ type: 'COMPLETE_TOUR' });
   const startNewGame = () => {
     try { localStorage.removeItem(OPENING_DONE_KEY); } catch {}
+    try { localStorage.removeItem(TOUR_DONE_KEY); } catch {}
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };
@@ -396,7 +413,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       completeTask, ignoreTask, resolveDecision,
       setActiveLocation, updateLocationCondition, addLocationNotification,
       clearLocationNotification, updateLocationOccupation, setPhase, addGameEvent,
-      completeIntro, startNewGame,
+      completeIntro, completeTour, startNewGame,
     }}>
       {children}
     </GameStateContext.Provider>
