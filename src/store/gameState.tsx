@@ -175,7 +175,7 @@ function reducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         pendingDialogue: null,
-        dialogueHistory: [record, ...state.dialogueHistory],
+        dialogueHistory: [record, ...state.dialogueHistory].slice(0, 100),
         phase: computePhase(null, state.pendingDecision, state.hasOpenedBuildingThisMonth),
       };
     }
@@ -213,7 +213,7 @@ function reducer(state: GameState, action: GameAction): GameState {
       let next: GameState = {
         ...state,
         pendingDecision: null,
-        decisionHistory: [record, ...state.decisionHistory],
+        decisionHistory: [record, ...state.decisionHistory].slice(0, 100),
         phase: computePhase(state.pendingDialogue, null, state.hasOpenedBuildingThisMonth),
         firstDecisionCompleted: true,
       };
@@ -586,6 +586,12 @@ const CONTRACTS_KEY = 'herdade_contracts';
 const CONTRACT_FLAGS_KEY = 'herdade_contract_flags';
 const CONSEQUENCE_CHAIN_KEY = 'herdade_consequence_chain';
 const PINNED_OBJECTIVE_KEY = 'herdade_pinned_objective';
+const DATE_KEY = 'herdade_date';
+const ECONOMY_KEY = 'herdade_economy';
+const EVENT_LOG_KEY = 'herdade_event_log';
+const PENDING_DECISION_KEY = 'herdade_pending_decision';
+const PENDING_DIALOGUE_KEY = 'herdade_pending_dialogue';
+const DIALOGUE_HISTORY_KEY = 'herdade_dialogue_history';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -649,6 +655,35 @@ function loadSavedState(): Partial<GameState> {
   try {
     const raw = localStorage.getItem(PINNED_OBJECTIVE_KEY);
     if (raw !== null) out.pinnedObjective = raw === 'null' ? null : raw;
+  } catch {}
+  try {
+    const raw = localStorage.getItem(DATE_KEY);
+    if (raw) {
+      const { month, year } = JSON.parse(raw) as { month: Month; year: number };
+      out.month = month;
+      out.year = year;
+      out.season = SEASON_MAP[month];
+    }
+  } catch {}
+  try {
+    const raw = localStorage.getItem(ECONOMY_KEY);
+    if (raw) out.economy = JSON.parse(raw) as EconomyState;
+  } catch {}
+  try {
+    const raw = localStorage.getItem(EVENT_LOG_KEY);
+    if (raw) out.eventLog = JSON.parse(raw) as GameEvent[];
+  } catch {}
+  try {
+    const raw = localStorage.getItem(PENDING_DECISION_KEY);
+    if (raw !== null) out.pendingDecision = JSON.parse(raw) as Decision | null;
+  } catch {}
+  try {
+    const raw = localStorage.getItem(PENDING_DIALOGUE_KEY);
+    if (raw !== null) out.pendingDialogue = JSON.parse(raw) as DialogueTemplate | null;
+  } catch {}
+  try {
+    const raw = localStorage.getItem(DIALOGUE_HISTORY_KEY);
+    if (raw) out.dialogueHistory = JSON.parse(raw) as DialogueRecord[];
   } catch {}
   return out;
 }
@@ -752,6 +787,42 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
   }, [state.pinnedObjective]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(DATE_KEY, JSON.stringify({ month: state.month, year: state.year }));
+    } catch {}
+  }, [state.month, state.year]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ECONOMY_KEY, JSON.stringify(state.economy));
+    } catch {}
+  }, [state.economy]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(EVENT_LOG_KEY, JSON.stringify(state.eventLog));
+    } catch {}
+  }, [state.eventLog]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PENDING_DECISION_KEY, JSON.stringify(state.pendingDecision));
+    } catch {}
+  }, [state.pendingDecision]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PENDING_DIALOGUE_KEY, JSON.stringify(state.pendingDialogue));
+    } catch {}
+  }, [state.pendingDialogue]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DIALOGUE_HISTORY_KEY, JSON.stringify(state.dialogueHistory.slice(0, 100)));
+    } catch {}
+  }, [state.dialogueHistory]);
+
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
@@ -803,6 +874,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
     try { localStorage.removeItem(CONSEQUENCE_CHAIN_KEY); } catch {}
     try { localStorage.removeItem(PINNED_OBJECTIVE_KEY); } catch {}
+    try { localStorage.removeItem(DATE_KEY); } catch {}
+    try { localStorage.removeItem(ECONOMY_KEY); } catch {}
+    try { localStorage.removeItem(EVENT_LOG_KEY); } catch {}
+    try { localStorage.removeItem(PENDING_DECISION_KEY); } catch {}
+    try { localStorage.removeItem(PENDING_DIALOGUE_KEY); } catch {}
+    try { localStorage.removeItem(DIALOGUE_HISTORY_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };
 

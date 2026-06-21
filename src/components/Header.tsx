@@ -104,6 +104,7 @@ const Header: React.FC = () => {
   };
 
   const isAdvancing = state.phase === 'EndOfMonth' || state.phase === 'Simulation';
+  const hasPendingFlow = state.phase === 'MonthStart' || state.phase === 'Decisions';
 
   return (
     <header className="bg-leather-900 border-b-2 border-gold/20 px-6 pt-3 pb-2">
@@ -149,10 +150,13 @@ const Header: React.FC = () => {
           {/* Advance Month button */}
           <button
             onClick={handleAdvanceMonth}
-            disabled={isAdvancing}
+            disabled={isAdvancing || hasPendingFlow}
+            title={hasPendingFlow ? (state.phase === 'MonthStart' ? 'Responda ao Maioral primeiro' : 'Resolva a decisão pendente primeiro') : undefined}
             className={`group relative flex items-center gap-2 px-4 py-2.5 border-2 rounded-lg transition-all duration-200 ${
               isAdvancing
                 ? 'bg-gold/5 border-gold/20 cursor-not-allowed opacity-60'
+                : hasPendingFlow
+                ? 'bg-leather-800/30 border-leather-600/30 cursor-not-allowed opacity-40'
                 : 'bg-leather-800/60 border-gold/40 hover:border-gold hover:bg-gold/10 cursor-pointer'
             }`}
           >
