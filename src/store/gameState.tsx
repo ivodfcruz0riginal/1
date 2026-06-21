@@ -372,6 +372,7 @@ const FIRST_DECISION_DONE_KEY = 'herdade_first_decision_done';
 const RANCH_PROBLEM_DONE_KEY = 'herdade_ranch_problem_done';
 const PRESTIGE_KEY = 'herdade_prestige';
 const FENCE_CONSEQUENCE_KEY = 'herdade_fence_consequence';
+const ANIMALS_KEY = 'herdade_animals';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -399,6 +400,10 @@ function loadSavedState(): Partial<GameState> {
     const fc = localStorage.getItem(FENCE_CONSEQUENCE_KEY);
     if (fc === 'delayed' || fc === 'ignored') out.pendingFenceConsequence = fc;
     else out.pendingFenceConsequence = null;
+  } catch {}
+  try {
+    const raw = localStorage.getItem(ANIMALS_KEY);
+    if (raw) out.animals = JSON.parse(raw);
   } catch {}
   return out;
 }
@@ -451,6 +456,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
   }, [state.pendingFenceConsequence]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(ANIMALS_KEY, JSON.stringify(state.animals));
+    } catch {}
+  }, [state.animals]);
+
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
@@ -489,6 +500,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try { localStorage.removeItem(RANCH_PROBLEM_DONE_KEY); } catch {}
     try { localStorage.removeItem(PRESTIGE_KEY); } catch {}
     try { localStorage.removeItem(FENCE_CONSEQUENCE_KEY); } catch {}
+    try { localStorage.removeItem(ANIMALS_KEY); } catch {}
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };

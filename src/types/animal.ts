@@ -75,4 +75,10 @@ export interface Animal {
   rejected: boolean;
   hasFought: boolean;
   notes: string;
+  // Monthly simulation fields (optional for backwards compat with static seed data)
+  bodyCondition?: number;  // 0–100 overall physical condition
+  hydration?: number;      // 0–100
+  stress?: number;         // 0–100 (high is bad)
+  fatigue?: number;        // 0–100 (high is bad)
+  monthlyNotes?: string;   // note from the most recent monthly update
 }

@@ -28,6 +28,33 @@ const healthColors: Record<HealthStatus, string> = {
   'Doente': 'text-red-400',
 };
 
+// ── Condition bar: green high = good, red high = bad ──────────────────────────
+
+interface ConditionBarProps {
+  label: string;
+  value: number;
+  invert?: boolean;
+}
+
+const ConditionBar: React.FC<ConditionBarProps> = ({ label, value, invert = false }) => {
+  const pct = value / 100;
+  const color = invert
+    ? pct > 0.7 ? 'bg-red-500/80' : pct > 0.4 ? 'bg-amber-500/70' : 'bg-emerald-600/70'
+    : pct > 0.7 ? 'bg-emerald-500/80' : pct > 0.4 ? 'bg-amber-500/70' : 'bg-red-500/70';
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-ivory/50 text-xs font-body w-24 uppercase tracking-wider">{label}</span>
+      <div className="flex-1 h-1.5 bg-leather-700/60 rounded-full overflow-hidden">
+        <div
+          className={`h-full ${color} rounded-full transition-all duration-700`}
+          style={{ width: `${value}%` }}
+        />
+      </div>
+      <span className="text-ivory/60 text-xs font-body w-8 text-right">{value}</span>
+    </div>
+  );
+};
+
 interface StatRowProps {
   label: string;
   value: number;
@@ -159,6 +186,24 @@ const AnimalDetailPanel: React.FC<AnimalDetailPanelProps> = ({
               {fatherName && <InfoRow label="Pai" value={fatherName} />}
               {motherName && <InfoRow label="Mãe" value={motherName} />}
             </div>
+          </div>
+        )}
+
+        {/* Monthly condition (populated after first Advance Month) */}
+        {(animal.bodyCondition !== undefined || animal.hydration !== undefined) && (
+          <div>
+            <h3 className="font-display text-xs text-gold/70 tracking-widest uppercase mb-3">Condição Mensal</h3>
+            <div className="space-y-2">
+              <ConditionBar label="Condição" value={animal.bodyCondition ?? 70} />
+              <ConditionBar label="Hidratação" value={animal.hydration ?? 80} />
+              <ConditionBar label="Stress" value={animal.stress ?? 15} invert />
+              <ConditionBar label="Fadiga" value={animal.fatigue ?? 10} invert />
+            </div>
+            {animal.monthlyNotes && (
+              <p className="mt-3 text-ivory/50 text-xs font-body italic bg-leather-700/20 rounded p-2.5 border border-leather-600/30">
+                {animal.monthlyNotes}
+              </p>
+            )}
           </div>
         )}
 

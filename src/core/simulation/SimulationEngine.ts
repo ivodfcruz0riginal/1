@@ -16,7 +16,7 @@ import {
   CERCADO_NOTIFICATIONS,
 } from '../../store/gameConstants';
 import { applyMonthToEconomy } from '../../store/economyEngine';
-import { applyMonthlyGrowth, type AnimalGrowthEvent } from '../../utils/animalGrowth';
+import { updateAnimals, type AnimalDiaryEvent } from './AnimalSimulationService';
 import { pickMonthlyDialogue } from '../../data/maioralDialogues';
 import {
   FENCE_CONSEQUENCE_DELAYED,
@@ -189,20 +189,27 @@ function phase3_updatePastures(
 
 // ── Phase 4: Update Animals ───────────────────────────────────────────────────
 //
-// Delegates to the existing growth engine: ages each animal, updates
-// weight, health, fertility, and category based on season and condition.
+// Delegates to AnimalSimulationService which:
+//   1. Applies growth (weight, health, fertility, category) via applyMonthlyGrowth.
+//   2. Applies world-state condition updates (bodyCondition, hydration, stress,
+//      fatigue, monthlyNotes) driven by enclosure quality, season, and age.
 
 function phase4_updateAnimals(
   climate: ClimateCtx,
   state: GameState,
-): { animals: GameState['animals']; animalEvents: AnimalGrowthEvent[] } {
-  const { animals, events } = applyMonthlyGrowth(
-    state.animals,
-    climate.month,
-    climate.year,
-    climate.season,
-  );
-  return { animals, animalEvents: events };
+  updatedLocations: Location[],
+): { animals: GameState['animals']; animalEvents: AnimalDiaryEvent[] } {
+  const norte = updatedLocations.find(l => l.id === 'cercado_norte');
+  const sul = updatedLocations.find(l => l.id === 'cercado_sul');
+
+  const { animals, diaryEvents } = updateAnimals(state.animals, climate.month, climate.year, {
+    season: climate.season,
+    northCondition: norte?.condition ?? 'Good',
+    southCondition: sul?.condition ?? 'Good',
+    northHasBrokenFence: (norte?.notifications ?? []).includes('BrokenFence'),
+  });
+
+  return { animals, animalEvents: diaryEvents };
 }
 
 // ── Phase 5: Update Economy ───────────────────────────────────────────────────
@@ -252,7 +259,7 @@ const SEASON_TRANSITION_EVENTS: Record<Season, string> = {
 function phase7_generateEvents(
   climate: ClimateCtx,
   state: GameState,
-  animalEvents: AnimalGrowthEvent[],
+  animalEvents: AnimalDiaryEvent[],
   economicEvent: GameEvent | null,
   pastureEvents: GameEvent[],
 ): GameEvent[] {
@@ -376,8 +383,8 @@ export function simulateMonth(state: GameState): SimulationOutput {
   // Phase 3: Update Pastures
   const { locations, pastureEvents } = phase3_updatePastures(climate, state);
 
-  // Phase 4: Update Animals
-  const { animals, animalEvents } = phase4_updateAnimals(climate, state);
+  // Phase 4: Update Animals (receives updated locations for enclosure context)
+  const { animals, animalEvents } = phase4_updateAnimals(climate, state, locations);
 
   // Phase 5: Update Economy
   const { economy, economicEvent } = phase5_updateEconomy(climate, state);
