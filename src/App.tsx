@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -7,6 +7,7 @@ import MaioralDialogue from './components/MaioralDialogue';
 import TasksPanel from './components/TasksPanel';
 import DecisionWindow from './components/DecisionWindow';
 import LocationDetailPanel from './components/LocationDetailPanel';
+import OpeningSequence, { isOpeningDone, markOpeningDone } from './components/OpeningSequence';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
 import EconomyScreen from './screens/EconomyScreen';
@@ -79,12 +80,22 @@ const Layout: React.FC = () => {
   );
 };
 
-const App: React.FC = () => (
-  <GameStateProvider>
-    <BrowserRouter>
-      <Layout />
-    </BrowserRouter>
-  </GameStateProvider>
-);
+const App: React.FC = () => {
+  const [showOpening, setShowOpening] = useState(() => !isOpeningDone());
+
+  const handleOpeningComplete = () => {
+    markOpeningDone();
+    setShowOpening(false);
+  };
+
+  return (
+    <GameStateProvider>
+      <BrowserRouter>
+        <Layout />
+        {showOpening && <OpeningSequence onComplete={handleOpeningComplete} />}
+      </BrowserRouter>
+    </GameStateProvider>
+  );
+};
 
 export default App;
