@@ -3,14 +3,16 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import DecisionWindow from './components/DecisionWindow';
-import OpeningSequence, { isOpeningDone, markOpeningDone } from './components/OpeningSequence';
+import OpeningSequence from './components/OpeningSequence';
 import { isTourDone } from './components/GuidedTour';
 import HerdadeScreen from './screens/HerdadeScreen';
 import PlaceholderPage from './pages/PlaceholderPage';
 import EfetivoScreen from './screens/EfetivoScreen';
 import EconomyScreen from './screens/EconomyScreen';
 import EscritorioScreen from './screens/EscritorioScreen';
-import { GameStateProvider } from './store/gameState';
+import { GameStateProvider, useGameState } from './store/gameState';
+
+// ── Layout shell ──────────────────────────────────────────────────────────────
 
 const Layout: React.FC<{ showTour: boolean; onTourComplete: () => void }> = ({ showTour, onTourComplete }) => (
   <div className="min-h-screen bg-leather-900 flex overflow-hidden">
@@ -50,30 +52,47 @@ const Layout: React.FC<{ showTour: boolean; onTourComplete: () => void }> = ({ s
   </div>
 );
 
-const App: React.FC = () => {
-  const [showOpening, setShowOpening] = useState(() => !isOpeningDone());
-  const [showTour, setShowTour] = useState(() => isOpeningDone() && !isTourDone());
+// ── Game root — reads game state, mounts opening and tour ─────────────────────
+
+const GameRoot: React.FC = () => {
+  const { state, completeIntro } = useGameState();
+
+  // ?intro=true forces the opening sequence regardless of completion state
+  const forceIntro = new URLSearchParams(window.location.search).get('intro') === 'true';
+
+  // Local visibility state — starts true when opening not yet done (or forced)
+  const [showOpening, setShowOpening] = useState(
+    () => !state.openingSequenceCompleted || forceIntro
+  );
+
+  const [showTour, setShowTour] = useState(
+    () => state.openingSequenceCompleted && !isTourDone()
+  );
 
   const handleOpeningComplete = () => {
-    markOpeningDone();
+    completeIntro();          // persists to game state + localStorage
     setShowOpening(false);
-    if (!isTourDone()) {
-      setShowTour(true);
-    }
+    if (!isTourDone()) setShowTour(true);
   };
 
-  const handleTourComplete = () => {
-    setShowTour(false);
-  };
+  const handleTourComplete = () => setShowTour(false);
 
   return (
-    <GameStateProvider>
-      <BrowserRouter>
-        <Layout showTour={showTour} onTourComplete={handleTourComplete} />
-        {showOpening && <OpeningSequence onComplete={handleOpeningComplete} />}
-      </BrowserRouter>
-    </GameStateProvider>
+    <>
+      <Layout showTour={showTour} onTourComplete={handleTourComplete} />
+      {showOpening && <OpeningSequence onComplete={handleOpeningComplete} />}
+    </>
   );
 };
+
+// ── App root ──────────────────────────────────────────────────────────────────
+
+const App: React.FC = () => (
+  <GameStateProvider>
+    <BrowserRouter>
+      <GameRoot />
+    </BrowserRouter>
+  </GameStateProvider>
+);
 
 export default App;

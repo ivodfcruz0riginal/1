@@ -167,18 +167,13 @@ const OpeningSequence: React.FC<Props> = ({ onComplete }) => {
 
 export const OPENING_STORAGE_KEY = 'herdade_opening_done';
 
+// Reads from localStorage — used by GuidedTour to check if opening is done
 export function isOpeningDone(): boolean {
   try {
     return localStorage.getItem(OPENING_STORAGE_KEY) === '1';
   } catch {
     return false;
   }
-}
-
-export function markOpeningDone(): void {
-  try {
-    localStorage.setItem(OPENING_STORAGE_KEY, '1');
-  } catch {}
 }
 
 export default OpeningSequence;

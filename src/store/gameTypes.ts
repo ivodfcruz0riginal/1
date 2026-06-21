@@ -75,6 +75,7 @@ export interface GameState {
   activeLocationId: LocationId | null;
   phase: GamePhase;
   hasOpenedBuildingThisMonth: boolean;
+  openingSequenceCompleted: boolean;
 }
 
 export type GameAction =
@@ -90,4 +91,6 @@ export type GameAction =
   | { type: 'CLEAR_LOCATION_NOTIFICATION'; id: LocationId; notification: LocationNotification }
   | { type: 'UPDATE_LOCATION_OCCUPATION'; id: LocationId; occupation: number }
   | { type: 'SET_PHASE'; phase: GamePhase }
-  | { type: 'ADD_GAME_EVENT'; text: string };
+  | { type: 'ADD_GAME_EVENT'; text: string }
+  | { type: 'COMPLETE_INTRO' }
+  | { type: 'NEW_GAME' };

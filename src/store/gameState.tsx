@@ -263,6 +263,10 @@ function reducer(state: GameState, action: GameAction): GameState {
       const ev: GameEvent = { id: nextId(), month: state.month, year: state.year, text: action.text };
       return { ...state, eventLog: [ev, ...state.eventLog].slice(0, 20) };
     }
+    case 'COMPLETE_INTRO':
+      return { ...state, openingSequenceCompleted: true };
+    case 'NEW_GAME':
+      return { ...INITIAL_STATE, openingSequenceCompleted: false };
     default:
       return state;
   }
@@ -294,6 +298,7 @@ const INITIAL_STATE: GameState = {
   activeLocationId: null,
   hasOpenedBuildingThisMonth: false,
   phase: 'MonthStart' as GamePhase,
+  openingSequenceCompleted: false,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -313,24 +318,31 @@ interface GameStateContextValue {
   updateLocationOccupation: (id: LocationId, occupation: number) => void;
   setPhase: (phase: GamePhase) => void;
   addGameEvent: (text: string) => void;
+  completeIntro: () => void;
+  startNewGame: () => void;
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
 
 const DECISIONS_STORAGE_KEY = 'herdade_decisions';
+const OPENING_DONE_KEY = 'herdade_opening_done';
 
-function loadDecisionHistory(): DecisionRecord[] {
+function loadSavedState(): Partial<GameState> {
+  const out: Partial<GameState> = {};
   try {
-    const raw = localStorage.getItem(DECISIONS_STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as DecisionRecord[];
+    const decisions = localStorage.getItem(DECISIONS_STORAGE_KEY);
+    if (decisions) out.decisionHistory = JSON.parse(decisions) as DecisionRecord[];
   } catch {}
-  return [];
+  try {
+    out.openingSequenceCompleted = localStorage.getItem(OPENING_DONE_KEY) === '1';
+  } catch {}
+  return out;
 }
 
 export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE, (init) => {
-    const saved = loadDecisionHistory();
-    return saved.length > 0 ? { ...init, decisionHistory: saved } : init;
+    const saved = loadSavedState();
+    return { ...init, ...saved };
   });
 
   useEffect(() => {
@@ -338,6 +350,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       localStorage.setItem(DECISIONS_STORAGE_KEY, JSON.stringify(state.decisionHistory));
     } catch {}
   }, [state.decisionHistory]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(OPENING_DONE_KEY, state.openingSequenceCompleted ? '1' : '0');
+    } catch {}
+  }, [state.openingSequenceCompleted]);
 
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
@@ -364,6 +382,13 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     dispatch({ type: 'SET_PHASE', phase });
   const addGameEvent = (text: string) =>
     dispatch({ type: 'ADD_GAME_EVENT', text });
+  const completeIntro = () =>
+    dispatch({ type: 'COMPLETE_INTRO' });
+  const startNewGame = () => {
+    try { localStorage.removeItem(OPENING_DONE_KEY); } catch {}
+    try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
+    dispatch({ type: 'NEW_GAME' });
+  };
 
   return (
     <GameStateContext.Provider value={{
@@ -371,6 +396,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       completeTask, ignoreTask, resolveDecision,
       setActiveLocation, updateLocationCondition, addLocationNotification,
       clearLocationNotification, updateLocationOccupation, setPhase, addGameEvent,
+      completeIntro, startNewGame,
     }}>
       {children}
     </GameStateContext.Provider>
