@@ -1,5 +1,5 @@
 import React from 'react';
-import { SectionTitle, StatBlock, EmptyState } from './OfficePrimitives';
+import { SectionTitle, StatBlock } from './OfficePrimitives';
 import { useGameState } from '../../store/gameState';
 
 const PRESTIGE_MAX = 1000;
@@ -35,10 +35,10 @@ const PrestigioTab: React.FC = () => {
                 />
               ))}
             </div>
-            <div className="flex justify-between text-[9px] text-ivory/25 font-body">
+            <div className="flex justify-between text-[9px] text-ivory/25 font-body mt-1">
               <span>Desconhecida</span>
               <span>Regional</span>
-              <span>Nacional</span>
+              <span>Renomada</span>
               <span>Internacional</span>
             </div>
           </div>
@@ -55,11 +55,22 @@ const PrestigioTab: React.FC = () => {
         <StatBlock label="Classificação Nacional" value="—" sub="Disponível brevemente" />
       </div>
 
-      {/* Achievements placeholder */}
+    {/* Achievement placeholder */}
       <div className="flex-1 overflow-hidden flex flex-col">
-        <SectionTitle>Conquistas</SectionTitle>
+        <SectionTitle>Feitos da Ganadaria</SectionTitle>
         <div className="flex-1 flex items-center justify-center">
-          <EmptyState icon="🏆" title="Sem conquistas desbloqueadas" subtitle="Lide e crie toiros excepcionais para ganhar prestígio." />
+          <div className="text-center max-w-xs">
+            <div className="flex items-center justify-center gap-2 mb-4 opacity-20">
+              {['◆', '◇', '◆'].map((s, i) => (
+                <span key={i} className="text-gold text-sm">{s}</span>
+              ))}
+            </div>
+            <p className="font-display text-sm text-ivory/30 tracking-wider uppercase mb-3">Sem feitos registados</p>
+            <p className="text-ivory/18 text-xs font-body leading-relaxed">
+              Lidares notáveis, animais que honraram a casa, safras de excepção —
+              os feitos da Herdade da Ferraria serão lavrados aqui para a posteridade.
+            </p>
+          </div>
         </div>
       </div>
     </div>

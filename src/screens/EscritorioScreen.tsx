@@ -25,6 +25,40 @@ const TABS: { key: TabKey; icon: string; label: string }[] = [
   { key: 'administracao', icon: '⚙️', label: 'Equipa' },
 ];
 
+// ── Bull silhouette painting ──────────────────────────────────────────────────
+
+const BullPainting: React.FC = () => (
+  <svg viewBox="0 0 100 72" className="w-full h-full" aria-hidden="true">
+    {/* Body */}
+    <path d="M35,42 Q30,31 35,22 Q45,13 58,17 Q72,13 81,20 Q89,29 86,42 Q89,52 82,57 Q70,62 55,60 Q38,62 32,53 Z"
+      fill="rgba(28,16,6,0.85)" />
+    {/* Neck */}
+    <path d="M37,20 Q44,14 51,18 Q53,24 51,33 Q44,38 37,35 Q33,29 35,23 Z"
+      fill="rgba(28,16,6,0.85)" />
+    {/* Head */}
+    <path d="M21,37 Q16,28 19,19 Q26,9 39,15 Q48,9 52,18 Q54,27 49,37 Q41,45 28,41 Z"
+      fill="rgba(28,16,6,0.85)" />
+    {/* Hump */}
+    <path d="M55,16 Q63,9 70,13 Q73,18 70,23 Q64,25 59,22 Q55,20 55,16 Z"
+      fill="rgba(22,12,4,0.8)" />
+    {/* Left horn */}
+    <path d="M23,18 Q17,7 11,4" fill="none" stroke="rgba(140,95,30,0.55)" strokeWidth="2.2" strokeLinecap="round" />
+    {/* Right horn */}
+    <path d="M37,13 Q43,3 49,1" fill="none" stroke="rgba(140,95,30,0.55)" strokeWidth="2.2" strokeLinecap="round" />
+    {/* Legs */}
+    <line x1="42" y1="59" x2="40" y2="70" stroke="rgba(28,16,6,0.85)" strokeWidth="4" strokeLinecap="round" />
+    <line x1="52" y1="60" x2="51" y2="70" stroke="rgba(28,16,6,0.85)" strokeWidth="4" strokeLinecap="round" />
+    <line x1="66" y1="60" x2="66" y2="70" stroke="rgba(28,16,6,0.85)" strokeWidth="4" strokeLinecap="round" />
+    <line x1="76" y1="58" x2="78" y2="69" stroke="rgba(28,16,6,0.85)" strokeWidth="4" strokeLinecap="round" />
+    {/* Tail */}
+    <path d="M85,41 Q94,32 91,44 Q89,51 84,55" fill="none" stroke="rgba(28,16,6,0.85)" strokeWidth="2.5" strokeLinecap="round" />
+    {/* Eye */}
+    <circle cx="23" cy="26" r="2.2" fill="rgba(90,60,20,0.5)" />
+    {/* Nostril */}
+    <ellipse cx="18" cy="32" rx="2" ry="1.2" fill="rgba(50,28,8,0.45)" />
+  </svg>
+);
+
 // ── Office wall decorations ───────────────────────────────────────────────────
 
 const WallDecoration: React.FC = () => (
@@ -33,13 +67,13 @@ const WallDecoration: React.FC = () => (
     <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-amber-950/25 to-transparent" />
 
     {/* Bull painting – top left */}
-    <div className="absolute top-6 left-6 w-20 h-16 opacity-20">
-      <div className="w-full h-full bg-leather-700/60 border border-leather-500/30 rounded flex items-center justify-center">
-        <span className="text-3xl">🐂</span>
+    <div className="absolute top-6 left-6 w-20 h-16 opacity-15">
+      <div className="w-full h-full bg-amber-950/30 border border-leather-500/25 rounded overflow-hidden p-1.5">
+        <BullPainting />
       </div>
       {/* Frame */}
-      <div className="absolute -inset-1 border border-gold/20 rounded pointer-events-none" />
-      <div className="absolute -inset-2 border border-leather-600/20 rounded pointer-events-none" />
+      <div className="absolute -inset-1 border border-gold/15 rounded pointer-events-none" />
+      <div className="absolute -inset-2 border border-leather-600/15 rounded pointer-events-none" />
     </div>
 
     {/* Map sketch – top right */}
@@ -160,14 +194,14 @@ const EscritorioScreen: React.FC = () => {
 
           {/* Bull silhouette painting */}
           <div className="mx-4 mt-4 mb-3 relative">
-            <div className="h-28 bg-gradient-to-b from-leather-800/40 to-leather-900/60 border border-leather-600/30 rounded flex items-center justify-center overflow-hidden">
-              <span className="text-5xl opacity-25">🐂</span>
-              <div className="absolute inset-0 bg-gradient-to-t from-leather-900/30 to-transparent" />
+            <div className="h-28 bg-gradient-to-b from-amber-950/30 to-leather-900/70 border border-leather-600/30 rounded flex items-center justify-center overflow-hidden p-3">
+              <BullPainting />
+              <div className="absolute inset-0 bg-gradient-to-t from-leather-900/20 to-transparent pointer-events-none" />
             </div>
             {/* Painting frame */}
             <div className="absolute -inset-1 border border-gold/15 rounded pointer-events-none" />
             <div className="absolute -inset-2 border border-leather-600/20 rounded pointer-events-none" />
-            <p className="text-ivory/15 text-[9px] font-body text-center mt-2 italic">Herdade da Ferraria</p>
+            <p className="text-ivory/15 text-[9px] font-body text-center mt-2 italic tracking-wider">Herdade da Ferraria · 1947</p>
           </div>
 
           {/* Divider */}

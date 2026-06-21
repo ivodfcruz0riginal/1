@@ -37,14 +37,14 @@ const Sidebar: React.FC = () => {
   const activeAnimalCount = state.animals.filter(a => a.status === 'Ativo').length;
 
   const menuItems = [
-    { icon: '🏘️', label: 'Herdade',    to: '/herdade' },
+    { icon: '⌂',  label: 'Herdade',    to: '/herdade' },
     { icon: '🏛️', label: 'Escritório', to: '/escritorio' },
     { icon: '🐂', label: 'Efectivo',   to: '/efetivo', badge: activeAnimalCount },
-    { icon: '❤️', label: 'Criação',    to: '/reproducao' },
-    { icon: '🎯', label: 'Tentaderos', to: '/tentas' },
+    { icon: '🐄', label: 'Criação',    to: '/reproducao' },
+    { icon: '⚔',  label: 'Tientas',   to: '/tentas' },
     { icon: '🏟️', label: 'Corridas',   to: '/corridas' },
     { icon: '📜', label: 'Legado',     to: '/legado' },
-    { icon: '⚙️', label: 'Definições', to: '/definicoes' },
+    { icon: '✦',  label: 'Definições', to: '/definicoes' },
   ];
 
   return (
@@ -92,8 +92,9 @@ const Sidebar: React.FC = () => {
             <span className="text-gold/40 text-xs">✦</span>
             <div className="w-6 h-px bg-gold/30"></div>
           </div>
-          <p className="text-ivory/30 text-xs font-body tracking-wider">PROVÍNCIA DO ALENTEJO</p>
-          <p className="text-ivory/20 text-[10px] font-body mt-0.5">Est. 1947</p>
+          <p className="text-ivory/30 text-xs font-body tracking-wider">HERDADE DA FERRARIA</p>
+          <p className="text-ivory/20 text-[10px] font-body mt-0.5">Ribatejo · Est. 1947</p>
+          <p className="text-ivory/12 text-[9px] font-body mt-1 italic">Touro bravo desde a fundação</p>
         </div>
       </div>
     </aside>
