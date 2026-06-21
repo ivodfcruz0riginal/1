@@ -29,6 +29,19 @@ const HerdadeScreen: React.FC<Props> = ({ showTour, onTourComplete }) => {
 
   return (
     <>
+      {/* Pinned objective — top left */}
+      {state.pinnedObjective && (
+        <div className="absolute top-5 left-6 z-20 max-w-xs">
+          <div className="bg-leather-900/90 border border-gold/30 rounded-lg px-4 py-3 shadow-xl backdrop-blur-sm">
+            <p className="text-ivory/50 text-[9px] font-body uppercase tracking-wider mb-1">Objectivo do Mês</p>
+            <div className="flex items-start gap-2">
+              <span className="text-gold text-sm shrink-0 mt-0.5">★</span>
+              <p className="text-ivory/85 text-xs font-body leading-snug">{state.pinnedObjective}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Weather & Time — top right */}
       <div className="absolute top-5 right-6 z-20 flex gap-3">
         <div className="bg-leather-900/90 border border-gold/30 rounded-lg px-5 py-3 shadow-xl backdrop-blur-sm">

@@ -9,12 +9,14 @@ import ContratosTab from './office/ContratosTab';
 import LivroTab from './office/LivroTab';
 import PrestigioTab from './office/PrestigioTab';
 import AdministracaoTab from './office/AdministracaoTab';
+import PlaneamentoTab from './office/PlaneamentoTab';
 
 // ── Tab config ────────────────────────────────────────────────────────────────
 
-type TabKey = 'diario' | 'jornal' | 'economia' | 'calendario' | 'contratos' | 'livro' | 'prestigio' | 'administracao';
+type TabKey = 'planeamento' | 'diario' | 'jornal' | 'economia' | 'calendario' | 'contratos' | 'livro' | 'prestigio' | 'administracao';
 
 const TABS: { key: TabKey; icon: string; label: string }[] = [
+  { key: 'planeamento',    icon: '📋', label: 'Planeamento' },
   { key: 'diario',        icon: '📖', label: 'Diário' },
   { key: 'jornal',        icon: '📰', label: 'Jornal' },
   { key: 'economia',      icon: '💰', label: 'Economia' },
@@ -97,7 +99,7 @@ const TabBar: React.FC<TabBarProps> = ({ active, onChange }) => (
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 const EscritorioScreen: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabKey>('diario');
+  const [activeTab, setActiveTab] = useState<TabKey>('planeamento');
   const navigate = useNavigate();
   const { state, dismissNotification } = useGameState();
 
@@ -204,6 +206,7 @@ const EscritorioScreen: React.FC = () => {
             {/* Paper texture top edge */}
             <div className="absolute top-0 inset-x-8 h-px bg-gradient-to-r from-transparent via-gold/10 to-transparent pointer-events-none" />
             <div className="h-full overflow-hidden flex flex-col p-5">
+              {activeTab === 'planeamento'    && <PlaneamentoTab />}
               {activeTab === 'diario'        && <DiarioTab />}
               {activeTab === 'jornal'        && <JornalTab />}
               {activeTab === 'economia'      && <EconomiaTab />}

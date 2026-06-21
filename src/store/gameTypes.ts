@@ -126,6 +126,7 @@ export interface GameState {
   simulatedMonths: number;
   lastSimulationTrace: SimulationTrace | null;
   consequenceChain: ConsequenceEntry[];  // newest first, max 50
+  pinnedObjective: string | null;
 }
 
 export type GameAction =
@@ -146,4 +147,5 @@ export type GameAction =
   | { type: 'COMPLETE_TOUR' }
   | { type: 'TRIGGER_RANCH_PROBLEM' }
   | { type: 'RESPOND_CONTRACT'; choice: 'accept' | 'negotiate' | 'decline' }
+  | { type: 'PIN_OBJECTIVE'; text: string | null }
   | { type: 'NEW_GAME' };

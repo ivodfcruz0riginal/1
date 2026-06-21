@@ -393,8 +393,9 @@ function reducer(state: GameState, action: GameAction): GameState {
       const ev: GameEvent = { id: nextId(), month: state.month, year: state.year, text: action.text };
       return { ...state, eventLog: [ev, ...state.eventLog].slice(0, 20) };
     }
-    case 'RESPOND_CONTRACT': {
-      if (!state.pendingContract) return state;
+    case 'PIN_OBJECTIVE':
+      return { ...state, pinnedObjective: action.text };
+    case 'RESPOND_CONTRACT': {      if (!state.pendingContract) return state;
       const offer: ContractOffer = state.pendingContract;
 
       // Find 2 suitable active bulls not already reserved
@@ -494,7 +495,7 @@ function reducer(state: GameState, action: GameAction): GameState {
       };
     }
     case 'NEW_GAME':
-      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false, firstDecisionCompleted: false, firstRanchProblemCompleted: false, prestige: 42, pendingFenceConsequence: null, lastSimulationTrace: null, consequenceChain: [] };
+      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false, firstDecisionCompleted: false, firstRanchProblemCompleted: false, prestige: 42, pendingFenceConsequence: null, lastSimulationTrace: null, consequenceChain: [], pinnedObjective: null };
     default:
       return state;
   }
@@ -540,6 +541,7 @@ const INITIAL_STATE: GameState = {
   simulatedMonths: 0,
   lastSimulationTrace: null,
   consequenceChain: [],
+  pinnedObjective: null,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -563,6 +565,7 @@ interface GameStateContextValue {
   completeTour: () => void;
   triggerRanchProblem: () => void;
   respondContract: (choice: 'accept' | 'negotiate' | 'decline') => void;
+  pinObjective: (text: string | null) => void;
   startNewGame: () => void;
 }
 
@@ -582,6 +585,7 @@ const WEATHER_KEY = 'herdade_weather';
 const CONTRACTS_KEY = 'herdade_contracts';
 const CONTRACT_FLAGS_KEY = 'herdade_contract_flags';
 const CONSEQUENCE_CHAIN_KEY = 'herdade_consequence_chain';
+const PINNED_OBJECTIVE_KEY = 'herdade_pinned_objective';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -641,6 +645,10 @@ function loadSavedState(): Partial<GameState> {
   try {
     const raw = localStorage.getItem(CONSEQUENCE_CHAIN_KEY);
     if (raw) out.consequenceChain = JSON.parse(raw) as ConsequenceEntry[];
+  } catch {}
+  try {
+    const raw = localStorage.getItem(PINNED_OBJECTIVE_KEY);
+    if (raw !== null) out.pinnedObjective = raw === 'null' ? null : raw;
   } catch {}
   return out;
 }
@@ -738,6 +746,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
   }, [state.consequenceChain]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(PINNED_OBJECTIVE_KEY, state.pinnedObjective ?? 'null');
+    } catch {}
+  }, [state.pinnedObjective]);
+
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
@@ -771,6 +785,8 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     dispatch({ type: 'TRIGGER_RANCH_PROBLEM' });
   const respondContract = (choice: 'accept' | 'negotiate' | 'decline') =>
     dispatch({ type: 'RESPOND_CONTRACT', choice });
+  const pinObjective = (text: string | null) =>
+    dispatch({ type: 'PIN_OBJECTIVE', text });
   const startNewGame = () => {
     try { localStorage.removeItem(OPENING_DONE_KEY); } catch {}
     try { localStorage.removeItem(TOUR_DONE_KEY); } catch {}
@@ -786,6 +802,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try { localStorage.removeItem(CONTRACT_FLAGS_KEY); } catch {}
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
     try { localStorage.removeItem(CONSEQUENCE_CHAIN_KEY); } catch {}
+    try { localStorage.removeItem(PINNED_OBJECTIVE_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };
 
@@ -795,7 +812,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       completeTask, ignoreTask, resolveDecision,
       setActiveLocation, updateLocationCondition, addLocationNotification,
       clearLocationNotification, updateLocationOccupation, setPhase, addGameEvent,
-      completeIntro, completeTour, triggerRanchProblem, respondContract, startNewGame,
+      completeIntro, completeTour, triggerRanchProblem, respondContract, pinObjective, startNewGame,
     }}>
       {children}
     </GameStateContext.Provider>
