@@ -21,6 +21,10 @@ const DevFlowChecklist = import.meta.env.DEV
   ? React.lazy(() => import('./components/DevFlowChecklist'))
   : null;
 
+const DevSimulationPanel = import.meta.env.DEV
+  ? React.lazy(() => import('./components/DevSimulationPanel'))
+  : null;
+
 // ── Layout shell ──────────────────────────────────────────────────────────────
 
 interface LayoutProps {
@@ -145,6 +149,11 @@ const GameRoot: React.FC = () => {
       {DevFlowChecklist && (
         <React.Suspense fallback={null}>
           <DevFlowChecklist />
+        </React.Suspense>
+      )}
+      {DevSimulationPanel && (
+        <React.Suspense fallback={null}>
+          <DevSimulationPanel />
         </React.Suspense>
       )}
     </>

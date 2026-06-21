@@ -57,6 +57,7 @@ export type {
   WeatherState,
   BullightContract,
   ContractOffer,
+  SimulationTrace,
   GameState,
   GameAction,
 } from './gameTypes';
@@ -122,7 +123,8 @@ function nextId(): string {
 }
 
 function advanceMonthState(state: GameState): GameState {
-  const next = simulateMonth(state).state;
+  const simOutput = simulateMonth(state);
+  const next = simOutput.state;
   const newSimMonths = (state.simulatedMonths ?? 0) + 1;
 
   // Check first contract trigger: after 2 months, onboarding done, prestige > 0, >= 2 suitable bulls, not yet offered
@@ -147,6 +149,7 @@ function advanceMonthState(state: GameState): GameState {
     simulatedMonths: newSimMonths,
     pendingContract,
     firstContractOffered: next.firstContractOffered || shouldOfferFirstContract,
+    lastSimulationTrace: simOutput.trace,
   };
 }
 
@@ -431,7 +434,7 @@ function reducer(state: GameState, action: GameAction): GameState {
       };
     }
     case 'NEW_GAME':
-      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false, firstDecisionCompleted: false, firstRanchProblemCompleted: false, prestige: 42, pendingFenceConsequence: null };
+      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false, firstDecisionCompleted: false, firstRanchProblemCompleted: false, prestige: 42, pendingFenceConsequence: null, lastSimulationTrace: null };
     default:
       return state;
   }
@@ -475,6 +478,7 @@ const INITIAL_STATE: GameState = {
   pendingContract: null,
   firstContractOffered: false,
   simulatedMonths: 0,
+  lastSimulationTrace: null,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────

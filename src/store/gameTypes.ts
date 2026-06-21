@@ -22,6 +22,23 @@ export type Month =
 
 export type Season = 'Primavera' | 'Verão' | 'Outono' | 'Inverno';
 
+// ── Dev simulation trace ──────────────────────────────────────────────────────
+// Populated once per ADVANCE_MONTH; only consumed by the dev debug panel.
+
+export interface SimulationTrace {
+  month: Month;
+  year: number;
+  executedAt: number;
+  simulationOrder: string[];
+  weather: string;
+  animalsUpdated: number;
+  staffUpdated: number;
+  pasturesUpdated: number;
+  economyDelta: number;
+  eventsGenerated: number;
+  reportSummary: string[];
+}
+
 export interface GameEvent {
   id: string;
   month: Month;
@@ -93,6 +110,7 @@ export interface GameState {
   pendingContract: ContractOffer | null;
   firstContractOffered: boolean;
   simulatedMonths: number;      // increments each ADVANCE_MONTH
+  lastSimulationTrace: SimulationTrace | null;
 }
 
 export type GameAction =

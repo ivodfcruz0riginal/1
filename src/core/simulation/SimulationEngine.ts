@@ -5,6 +5,7 @@ import type {
   Season,
   BuildingNotification,
   BuildingKey,
+  SimulationTrace,
 } from '../../store/gameTypes';
 import type { Location } from '../../types/location';
 import type { Decision } from '../../data/decisions';
@@ -66,6 +67,7 @@ export interface SimulationOutput {
   newEvents: GameEvent[];
   report: MonthlyReport;
   simulationLog: string;
+  trace: SimulationTrace;
 }
 
 // ── Internal contexts ─────────────────────────────────────────────────────────
@@ -406,6 +408,31 @@ export function simulateMonth(state: GameState): SimulationOutput {
     newEvents,
   );
 
+  // Build simulation trace (dev debug panel)
+  const trace: SimulationTrace = {
+    month: climate.month,
+    year: climate.year,
+    executedAt: Date.now(),
+    simulationOrder: [
+      '1. Advance Date',
+      '2. Roll Weather',
+      '3. Update Pastures',
+      '4. Update Animals',
+      '5. Update Economy',
+      '6. Resolve Consequences',
+      '7. Update Staff',
+      '8. Generate Events',
+      '9. Build Report',
+    ],
+    weather: `${weather.icon} ${weather.desc} (${weather.temp})`,
+    animalsUpdated: animals.filter(a => a.status !== 'Morto' && a.status !== 'Vendido').length,
+    staffUpdated: staff.length,
+    pasturesUpdated: locations.filter(l => l.type === 'Pasture').length,
+    economyDelta: economy.treasury - state.economy.treasury,
+    eventsGenerated: newEvents.length,
+    reportSummary: report.summary,
+  };
+
   // Compose next state — spread preserves all non-simulated fields
   // (flow flags, prestige, decision/dialogue history, etc.)
   const nextState: GameState = {
@@ -427,12 +454,14 @@ export function simulateMonth(state: GameState): SimulationOutput {
     phase: computePhase(pendingDialogue, pendingDecision, false),
     pendingFenceConsequence: nextFenceConsequence,
     weather,
+    lastSimulationTrace: trace,
   };
 
   return {
     state: nextState,
     newEvents,
     report,
-    simulationLog: 'Simulation completed.',
+    simulationLog: report.summary.join(' '),
+    trace,
   };
 }
