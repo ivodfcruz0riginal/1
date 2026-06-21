@@ -80,7 +80,7 @@ export const SAMPLE_OBJECTIVES: GameplayObjective[] = [
     description: 'Analise o estado da tesouraria e o balanço de receitas e despesas do período.',
     priority: 3,
     completed: false,
-    location: '/escritorio',
+    location: '/economia',
   },
   {
     id: 'read-diary',

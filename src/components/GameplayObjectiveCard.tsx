@@ -1,6 +1,9 @@
 import React, { useRef, useState } from 'react';
+import { useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
 import { GameplayDirector, GameplayPhase } from '../core/gameplay/GameplayDirector';
 import type { GameplayObjective } from '../core/gameplay/GameplayDirector';
+import { useGameState } from '../store/gameState';
+import type { LocationId } from '../types/location';
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 
@@ -21,11 +24,26 @@ const LOCATION_LABELS: Record<string, string> = {
   '/herdade':      'Herdade',
   '/escritorio':   'Escritório',
   '/efetivo':      'Efectivo',
+  '/economia':     'Economia',
+  '/reproducao':   'Reprodução',
+  '/tentas':       'Tentas',
+  '/corridas':     'Corridas',
+  '/legado':       'Legado',
+  'casa':          'Casa Principal',
   'currais':       'Currais',
   'tentadero':     'Tentadero',
   'cercado_norte': 'Cercado Norte',
   'cercado_sul':   'Cercado Sul',
+  'embarque':      'Embarque',
+  'armazem':       'Armazém',
+  'barragem':      'Barragem',
+  'oficina':       'Oficina',
 };
+
+// ── Navigation helpers ────────────────────────────────────────────────────────
+
+/** True when `loc` is a React Router route (starts with /). */
+const isRoute = (loc: string) => loc.startsWith('/');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +53,9 @@ const isFallback = (obj: GameplayObjective) => obj.id === 'explore-herdade';
 
 const GameplayObjectiveCard: React.FC = () => {
   const directorRef = useRef(new GameplayDirector(GameplayPhase.HERDADE));
+  const navigate = useNavigate();
+  const routerLocation = useRouterLocation();
+  const { setActiveLocation } = useGameState();
 
   const [phase, setPhase] = useState<GameplayPhase>(
     () => directorRef.current.getCurrentPhase(),
@@ -50,10 +71,24 @@ const GameplayObjectiveCard: React.FC = () => {
     setObjective(directorRef.current.getCurrentObjective());
   };
 
+  const handleNavigate = () => {
+    const loc = objective.location;
+    if (!loc) return;
+
+    if (isRoute(loc)) {
+      navigate(loc);
+    } else {
+      // Location ID — open the panel on the Herdade map
+      setActiveLocation(loc as LocationId);
+      if (routerLocation.pathname !== '/herdade') {
+        navigate('/herdade');
+      }
+    }
+  };
+
   const fallback = isFallback(objective);
-  const locationLabel = objective.location
-    ? (LOCATION_LABELS[objective.location] ?? objective.location)
-    : null;
+  const hasLocation = !!objective.location;
+  const locationLabel = objective.location ? (LOCATION_LABELS[objective.location] ?? objective.location) : null;
 
   return (
     <div className="absolute bottom-6 right-6 z-20 w-56 pointer-events-auto">
@@ -85,9 +120,15 @@ const GameplayObjectiveCard: React.FC = () => {
               <p className="font-display text-sm text-gold/70 tracking-wide leading-snug mb-1.5">
                 Explorar a Herdade
               </p>
-              <p className="text-ivory/35 text-[10px] font-body leading-relaxed">
+              <p className="text-ivory/35 text-[10px] font-body leading-relaxed mb-3">
                 Percorra os locais e descubra o que precisa de atenção.
               </p>
+              <button
+                onClick={() => navigate('/herdade')}
+                className="w-full text-[10px] font-body text-gold/70 border border-gold/30 rounded px-3 py-1.5 uppercase tracking-wider transition-all duration-200 hover:border-gold/60 hover:text-gold hover:bg-gold/5"
+              >
+                Ir para a Herdade
+              </button>
             </>
           ) : (
             <>
@@ -97,12 +138,23 @@ const GameplayObjectiveCard: React.FC = () => {
               <p className="text-ivory/40 text-[10px] font-body leading-relaxed mb-3">
                 {objective.description}
               </p>
-              <button
-                onClick={handleComplete}
-                className="w-full text-[10px] font-body text-gold/70 border border-gold/30 rounded px-3 py-1.5 uppercase tracking-wider transition-all duration-200 hover:border-gold/60 hover:text-gold hover:bg-gold/5"
-              >
-                Marcar como feito
-              </button>
+
+              <div className="flex flex-col gap-1.5">
+                {hasLocation && (
+                  <button
+                    onClick={handleNavigate}
+                    className="w-full text-[10px] font-body text-gold border border-gold/50 rounded px-3 py-1.5 uppercase tracking-wider transition-all duration-200 hover:bg-gold/10 hover:border-gold/80"
+                  >
+                    Ir para o local
+                  </button>
+                )}
+                <button
+                  onClick={handleComplete}
+                  className="w-full text-[10px] font-body text-ivory/45 border border-leather-600/40 rounded px-3 py-1.5 uppercase tracking-wider transition-all duration-200 hover:border-leather-500/60 hover:text-ivory/65"
+                >
+                  Marcar como feito
+                </button>
+              </div>
             </>
           )}
         </div>
