@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameState } from '../store/gameState';
 import type { BuildingKey, BuildingNotification, LocationId } from '../store/gameState';
 
@@ -25,6 +25,18 @@ export function getTimeOfDay(month: string, year: number): TimeInfo {
   return periods[hash];
 }
 
+// ── Sound event placeholders ──────────────────────────────────────────────────
+// Dispatches CustomEvents on window. No audio files needed.
+// A future audio system can listen to these events.
+
+type SoundEvent = 'birds' | 'wind' | 'cowbell' | 'horse' | 'gate' | 'rain' | 'cattle';
+
+function emitSound(event: SoundEvent) {
+  try {
+    window.dispatchEvent(new CustomEvent('ranch:sound', { detail: { event } }));
+  } catch {}
+}
+
 // ── Pre-computed ambient data (stable across renders) ─────────────────────────
 
 const RAIN_DROPS = Array.from({ length: 38 }, (_, i) => ({
@@ -45,6 +57,8 @@ const BIRDS = [
   { top: '11%', delay: '0s',    duration: '28s' },
   { top: '7%',  delay: '-13s',  duration: '34s' },
   { top: '16%', delay: '-22s',  duration: '25s' },
+  { top: '5%',  delay: '-39s',  duration: '42s' },
+  { top: '19%', delay: '-55s',  duration: '31s' },
 ];
 
 const LIGHTING: Record<TimeOfDay, string> = {
@@ -53,6 +67,45 @@ const LIGHTING: Record<TimeOfDay, string> = {
   entardecer: 'rgba(220,90,30,0.05)',
   noite:      'rgba(15,20,60,0.28)',
 };
+
+// Pre-computed grazing animal positions in each cercado
+// Each animal: position, size, bob delay, walk delay, turn delay
+const NORTE_ANIMALS = [
+  { bottom: 20, left: 30,  size: 'lg' as const, bobD: '0s',    walkD: '0s',   turnD: '0s'   },
+  { bottom: 38, left: 68,  size: 'md' as const, bobD: '-1.5s', walkD: '-6s',  turnD: '-8s'  },
+  { bottom: 24, left: 108, size: 'sm' as const, bobD: '-3s',   walkD: '-11s', turnD: '-4s'  },
+  { bottom: 52, left: 90,  size: 'md' as const, bobD: '-0.7s', walkD: '-3s',  turnD: '-14s' },
+  { bottom: 38, left: 148, size: 'sm' as const, bobD: '-2.2s', walkD: '-16s', turnD: '-2s'  },
+  { bottom: 30, left: 185, size: 'md' as const, bobD: '-4s',   walkD: '-9s',  turnD: '-6s'  },
+  { bottom: 60, left: 50,  size: 'sm' as const, bobD: '-1s',   walkD: '-18s', turnD: '-12s' },
+];
+
+const SUL_ANIMALS = [
+  { bottom: 25, left: 40,  size: 'md' as const, bobD: '-0.5s', walkD: '-2s',  turnD: '-10s' },
+  { bottom: 42, left: 80,  size: 'lg' as const, bobD: '-2.8s', walkD: '-7s',  turnD: '-3s'  },
+  { bottom: 28, left: 130, size: 'sm' as const, bobD: '-1.2s', walkD: '-13s', turnD: '-7s'  },
+  { bottom: 55, left: 100, size: 'md' as const, bobD: '-3.5s', walkD: '-5s',  turnD: '-15s' },
+  { bottom: 35, left: 165, size: 'sm' as const, bobD: '-0.8s', walkD: '-10s', turnD: '-1s'  },
+];
+
+// Dust puff spawn points across the ground
+const DUST_PUFFS = [
+  { left: '12%', top: '72%', delay: '0s',    duration: '6.5s'  },
+  { left: '28%', top: '68%', delay: '-2.3s', duration: '7.2s'  },
+  { left: '45%', top: '75%', delay: '-4.1s', duration: '5.8s'  },
+  { left: '62%', top: '70%', delay: '-1.5s', duration: '6.9s'  },
+  { left: '78%', top: '73%', delay: '-5.6s', duration: '8.1s'  },
+  { left: '88%', top: '67%', delay: '-3.2s', duration: '6.3s'  },
+  { left: '35%', top: '80%', delay: '-7s',   duration: '9s'    },
+  { left: '55%', top: '78%', delay: '-0.9s', duration: '7.5s'  },
+];
+
+// Ground cloud shadow passes
+const GROUND_SHADOWS = [
+  { top: '58%',  height: '12%', delay: '0s',   duration: '38s', opacity: 0.06 },
+  { top: '70%',  height: '8%',  delay: '-14s',  duration: '52s', opacity: 0.05 },
+  { top: '82%',  height: '10%', delay: '-29s',  duration: '44s', opacity: 0.04 },
+];
 
 // ── Small subcomponents ───────────────────────────────────────────────────────
 
@@ -92,10 +145,24 @@ const BuildingTooltip: React.FC<{ name: string; hint: string; visible: boolean }
   </div>
 );
 
-const BullSilhouette: React.FC<{ size?: 'sm' | 'md' | 'lg'; style?: React.CSSProperties }> = ({ size = 'md', style }) => {
+// ── Grazing bull with all three animation layers ───────────────────────────────
+
+interface BullProps {
+  size?: 'sm' | 'md' | 'lg';
+  style?: React.CSSProperties;
+  animated?: boolean;
+  bobDelay?: string;
+  walkDelay?: string;
+  turnDelay?: string;
+}
+
+const BullSilhouette: React.FC<BullProps> = ({
+  size = 'md', style, animated = false,
+  bobDelay = '0s', walkDelay = '0s', turnDelay = '0s',
+}) => {
   const w = size === 'sm' ? 'w-3 h-2' : size === 'md' ? 'w-5 h-3' : 'w-6 h-4';
-  return (
-    <div className="relative pointer-events-none" style={style}>
+  const body = (
+    <div className="relative pointer-events-none">
       <div className={`${w} bg-leather-900/70 rounded-full relative`}>
         <div className="absolute -top-1 left-1 w-2 h-2 bg-leather-900/70 rounded-t-full" />
         <div className="absolute -bottom-1 left-1 w-0.5 h-1 bg-leather-900/70" />
@@ -106,7 +173,60 @@ const BullSilhouette: React.FC<{ size?: 'sm' | 'md' | 'lg'; style?: React.CSSPro
       <div className="absolute top-1 -right-2 w-2 h-0.5 bg-leather-900/50 rounded rotate-12" />
     </div>
   );
+
+  if (!animated) {
+    return <div className="relative pointer-events-none" style={style}>{body}</div>;
+  }
+
+  return (
+    // Outer: horizontal walk drift
+    <div
+      className="graze-walk"
+      style={{ ...style, animationDelay: walkDelay }}
+    >
+      {/* Middle: turn/flip */}
+      <div className="graze-turn" style={{ animationDelay: turnDelay }}>
+        {/* Inner: bob */}
+        <div className="graze-bob" style={{ animationDelay: bobDelay }}>
+          {body}
+        </div>
+      </div>
+    </div>
+  );
 };
+
+// ── Staff figure (campino / maioral) ──────────────────────────────────────────
+
+interface StickFigureProps {
+  hat?: boolean;
+  opacity?: number;
+  style?: React.CSSProperties;
+  className?: string;
+}
+
+const StickFigure: React.FC<StickFigureProps> = ({ hat = false, opacity = 0.55, style, className = '' }) => (
+  <div className={`select-none ${className}`} style={{ ...style, opacity }}>
+    {/* Hat */}
+    {hat && <div className="w-4 h-1 bg-amber-800/80 rounded mx-auto mb-0" />}
+    {/* Head */}
+    <div className="w-3 h-3 bg-amber-800/75 rounded-full mx-auto" />
+    {/* Body */}
+    <div className="w-2.5 h-5 bg-leather-700/80 rounded-t mx-auto mt-0.5 relative">
+      {/* Arms */}
+      <div className="absolute top-1 -left-1.5 w-2 h-1 bg-leather-700/70 rounded-b-full rotate-12" />
+      <div className="absolute top-1 -right-1.5 w-2 h-1 bg-leather-700/70 rounded-b-full -rotate-12" />
+    </div>
+    {/* Legs */}
+    <div className="flex gap-0.5 justify-center">
+      <div className="w-1.5 h-4 bg-leather-800/75 rounded-b" />
+      <div className="w-1.5 h-4 bg-leather-800/75 rounded-b" />
+    </div>
+    {/* Shadow */}
+    <div className="w-5 h-1 bg-black/20 rounded-full mx-auto blur-sm -mt-0.5" />
+  </div>
+);
+
+// ── Static Manuel figure (Maioral near office) ────────────────────────────────
 
 const ManuelFigure: React.FC<{ hasDialogue: boolean }> = ({ hasDialogue }) => (
   <div className="absolute pointer-events-none select-none" style={{ top: '98px', right: '118px', zIndex: 15 }}>
@@ -152,6 +272,43 @@ const BirdShape: React.FC<{ scale?: number }> = ({ scale = 1 }) => (
   </svg>
 );
 
+// ── Sound scheduler ───────────────────────────────────────────────────────────
+// Fires ambient sound events on a random schedule.
+
+function useSoundScheduler(ambientEnabled: boolean) {
+  useEffect(() => {
+    if (!ambientEnabled) return;
+
+    // Fire birds shortly after mount
+    const birdTimer = setTimeout(() => emitSound('birds'), 3500);
+
+    const schedule = [
+      { event: 'birds'   as SoundEvent, minMs: 18000, maxMs: 45000 },
+      { event: 'wind'    as SoundEvent, minMs: 25000, maxMs: 70000 },
+      { event: 'cowbell' as SoundEvent, minMs: 30000, maxMs: 80000 },
+      { event: 'cattle'  as SoundEvent, minMs: 40000, maxMs: 90000 },
+    ];
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    function scheduleNext(entry: typeof schedule[0]) {
+      const delay = entry.minMs + Math.random() * (entry.maxMs - entry.minMs);
+      const t = setTimeout(() => {
+        emitSound(entry.event);
+        scheduleNext(entry);
+      }, delay);
+      timers.push(t);
+    }
+
+    schedule.forEach(scheduleNext);
+
+    return () => {
+      clearTimeout(birdTimer);
+      timers.forEach(clearTimeout);
+    };
+  }, [ambientEnabled]);
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boolean }> = ({
@@ -161,6 +318,8 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
   const [hovered, setHovered] = useState<string | null>(null);
   const { state, dismissNotification, setActiveLocation } = useGameState();
   const { notifications } = state;
+
+  useSoundScheduler(ambientEnabled);
 
   const tod = getTimeOfDay(state.month, state.year);
   const weather = state.weather;
@@ -176,7 +335,6 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
     setActiveLocation(key as LocationId);
   };
 
-  // Sky gradient adapts to time-of-day
   const skyGradients: Record<TimeOfDay, { from: string; via: string }> = {
     manha:      { from: 'from-sky-800/70',      via: 'via-amber-500/30' },
     tarde:      { from: 'from-sky-700/50',       via: 'via-amber-600/25' },
@@ -193,6 +351,14 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
         <div className={`absolute inset-0 bg-gradient-to-b ${sky.from} ${sky.via} via-60% to-leather-900`} />
         <div className="absolute inset-0 bg-gradient-to-br from-red-800/15 via-transparent to-purple-900/8" />
       </div>
+
+      {/* ── Daylight subtle pulse ── */}
+      {ambientEnabled && tod.period !== 'noite' && (
+        <div
+          className="absolute inset-0 pointer-events-none daylight-pulse"
+          style={{ background: 'rgba(255,235,160,0.06)', zIndex: 1 }}
+        />
+      )}
 
       {/* ── AMBIENT: Time-of-day lighting tint ── */}
       {ambientEnabled && (
@@ -212,7 +378,6 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
           ))}
         </div>
       ) : (
-        /* Moon for night */
         <div className="absolute top-10 left-1/4 pointer-events-none" style={{ zIndex: 2 }}>
           <div className="w-12 h-12 rounded-full bg-gradient-radial from-slate-200/40 via-slate-300/20 to-transparent blur-sm" />
           <div className="absolute inset-1 w-10 h-10 rounded-full border border-slate-300/20" />
@@ -249,12 +414,35 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
         </div>
       )}
 
+      {/* ── AMBIENT: Ground cloud shadows ── */}
+      {ambientEnabled && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 4 }}>
+          {GROUND_SHADOWS.map((s, i) => (
+            <div
+              key={i}
+              className="absolute ground-shadow-anim"
+              style={{
+                top: s.top,
+                left: '-25%',
+                width: '35%',
+                height: s.height,
+                background: 'rgba(20,15,8,1)',
+                borderRadius: '50%',
+                animationDelay: `${i === 0 ? '0s' : i === 1 ? '-14s' : '-29s'}`,
+                animationDuration: s.duration,
+                opacity: s.opacity,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* ── AMBIENT: BIRDS ── */}
       {ambientEnabled && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 4 }}>
           {BIRDS.map((b, i) => (
             <div key={i} className="absolute ambient-bird" style={{ top: b.top, left: '105vw', animationDelay: b.delay, animationDuration: b.duration }}>
-              <BirdShape scale={0.8 + i * 0.15} />
+              <BirdShape scale={0.75 + i * 0.12} />
             </div>
           ))}
         </div>
@@ -271,7 +459,7 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
         </svg>
       </div>
 
-      {/* Cork oaks — with wind sway when ambient enabled */}
+      {/* Cork oaks */}
       {[{ top: '8%', left: '15%' }, { top: '75%', left: '30%' }, { top: '20%', right: '40%' }, { top: '60%', right: '55%' }].map((pos, i) => (
         <div
           key={i}
@@ -283,6 +471,51 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
           <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-5 h-4 bg-emerald-950/50 rounded-full" />
         </div>
       ))}
+
+      {/* ── AMBIENT: Dust puffs ── */}
+      {ambientEnabled && (
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 6 }}>
+          {DUST_PUFFS.map((d, i) => (
+            <div
+              key={i}
+              className="absolute dust-puff"
+              style={{
+                left: d.left,
+                top: d.top,
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: 'rgba(180,150,100,0.3)',
+                animationDelay: d.delay,
+                animationDuration: d.duration,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── AMBIENT: Dust columns (heat haze) ── */}
+      {ambientEnabled && tod.period === 'tarde' && (
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 6 }}>
+          {[
+            { left: '22%', delay: '0s' },
+            { left: '68%', delay: '-5s' },
+          ].map((col, i) => (
+            <div
+              key={i}
+              className="absolute bottom-0 dust-column"
+              style={{
+                left: col.left,
+                width: '4px',
+                height: '60px',
+                background: 'linear-gradient(to top, rgba(180,150,100,0.15), transparent)',
+                borderRadius: '4px',
+                animationDelay: col.delay,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* ── ESTATE LAYOUT ── */}
       <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 10 }}>
@@ -322,7 +555,6 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
               <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/40 via-yellow-900/20 to-amber-950/30" />
               <div className={`absolute inset-0 bg-gold/5 transition-opacity duration-300 ${hovered === 'norte' ? 'opacity-100' : 'opacity-0'}`} />
 
-              {/* Grass blades container — wind sway when ambient + wind */}
               <div className={`absolute inset-0 opacity-30 ${ambientEnabled && showWind ? 'ambient-grass' : ''}`}>
                 {[...Array(25)].map((_, i) => (
                   <div key={i} className="absolute w-1 h-3 bg-emerald-800/40 rounded-t" style={{ left: `${5 + (i * 3.8) % 90}%`, top: `${10 + Math.sin(i * 0.5) * 40}%`, transform: `rotate(${-10 + (i % 3) * 10}deg)` }} />
@@ -338,24 +570,18 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
               </div>
             </div>
 
-            {/* Static bulls */}
-            <BullSilhouette size="lg" style={{ position: 'absolute', bottom: 20, left: 30 }} />
-            <BullSilhouette size="md" style={{ position: 'absolute', bottom: 35, left: 70, opacity: 0.8 }} />
-            <BullSilhouette size="sm" style={{ position: 'absolute', bottom: 25, left: 110, opacity: 0.6 }} />
-            <BullSilhouette size="md" style={{ position: 'absolute', bottom: 50, left: 90, opacity: 0.5 }} />
-            <BullSilhouette size="sm" style={{ position: 'absolute', bottom: 40, left: 150, opacity: 0.7 }} />
-
-            {/* Ambient drifting bulls */}
-            {ambientEnabled && (
-              <>
-                <div className="pointer-events-none absolute ambient-bull" style={{ bottom: '30%', left: '42%', animationDelay: '0s' }}>
-                  <BullSilhouette size="sm" style={{ opacity: 0.55 }} />
-                </div>
-                <div className="pointer-events-none absolute ambient-bull" style={{ bottom: '55%', left: '22%', animationDelay: '-6s' }}>
-                  <BullSilhouette size="sm" style={{ opacity: 0.45 }} />
-                </div>
-              </>
-            )}
+            {/* Grazing animals — animated */}
+            {NORTE_ANIMALS.map((a, i) => (
+              <BullSilhouette
+                key={i}
+                size={a.size}
+                animated={ambientEnabled}
+                bobDelay={a.bobD}
+                walkDelay={a.walkD}
+                turnDelay={a.turnD}
+                style={{ position: 'absolute', bottom: a.bottom, left: a.left, opacity: 0.6 + i * 0.04 }}
+              />
+            ))}
 
             <div className={`absolute bottom-3 left-3 transition-opacity duration-200 ${hovered === 'norte' ? 'opacity-0' : 'opacity-100'}`}>
               <span className="text-ivory/40 text-[10px] font-body uppercase tracking-widest">Cercado Norte</span>
@@ -393,16 +619,18 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
               </div>
             </div>
 
-            <BullSilhouette size="md" style={{ position: 'absolute', bottom: 25, left: 40 }} />
-            <BullSilhouette size="lg" style={{ position: 'absolute', bottom: 40, left: 80, opacity: 0.9 }} />
-            <BullSilhouette size="sm" style={{ position: 'absolute', bottom: 30, left: 130, opacity: 0.7 }} />
-            <BullSilhouette size="md" style={{ position: 'absolute', bottom: 55, left: 100, opacity: 0.6 }} />
-
-            {ambientEnabled && (
-              <div className="pointer-events-none absolute ambient-bull" style={{ bottom: '28%', left: '55%', animationDelay: '-4s' }}>
-                <BullSilhouette size="sm" style={{ opacity: 0.5 }} />
-              </div>
-            )}
+            {/* Grazing animals — animated */}
+            {SUL_ANIMALS.map((a, i) => (
+              <BullSilhouette
+                key={i}
+                size={a.size}
+                animated={ambientEnabled}
+                bobDelay={a.bobD}
+                walkDelay={a.walkD}
+                turnDelay={a.turnD}
+                style={{ position: 'absolute', bottom: a.bottom, left: a.left, opacity: 0.6 + i * 0.05 }}
+              />
+            ))}
 
             <div className={`absolute bottom-3 left-3 transition-opacity duration-200 ${hovered === 'sul' ? 'opacity-0' : 'opacity-100'}`}>
               <span className="text-ivory/40 text-[10px] font-body uppercase tracking-widest">Cercado Sul</span>
@@ -473,8 +701,16 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
             </div>
           </div>
 
-          {/* ── MANUEL — Maioral ── */}
+          {/* ── MANUEL — Maioral (static with dialogue indicator) ── */}
           <ManuelFigure hasDialogue={!!state.pendingDialogue} />
+
+          {/* ── AMBIENT: Campinos walking route ── */}
+          {ambientEnabled && (
+            <>
+              <StickFigure hat className="campino-a" style={{ animationDelay: '0s', zIndex: 14 }} />
+              <StickFigure hat className="campino-b" style={{ animationDelay: '-18s', zIndex: 14 }} />
+            </>
+          )}
 
           {/* ── CASA PRINCIPAL ── */}
           <div
@@ -490,11 +726,8 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
             <div className={`absolute inset-0 rounded shadow-lg border-2 transition-all duration-300 ${hovered === 'casa' ? 'bg-leather-700/95 border-gold/40 shadow-gold/15' : 'bg-leather-800/80 border-leather-600/50'}`}>
               <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[72px] border-r-[72px] border-b-[40px] border-l-transparent border-r-transparent border-b-amber-900/70 pointer-events-none" />
               <div className={`absolute -top-10 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[72px] border-r-[72px] border-b-[36px] border-l-transparent border-r-transparent border-b-amber-800/50 pointer-events-none transition-opacity duration-300 ${hovered === 'casa' ? 'opacity-100' : 'opacity-30'}`} />
-
-              {/* Chimney */}
               <div className="absolute -top-14 right-5 w-4 h-8 bg-leather-700/70 border border-leather-600/40 rounded-t pointer-events-none" />
 
-              {/* ── AMBIENT: Chimney smoke ── */}
               {ambientEnabled && (
                 <>
                   <div className="pointer-events-none ambient-smoke" style={{ position: 'absolute', top: '-30px', right: '19px', width: '7px', height: '7px', borderRadius: '50%', background: 'rgba(210,200,185,0.5)', animationDelay: '0s' }} />
@@ -586,11 +819,6 @@ const RanchMap: React.FC<{ highlightedId?: string | null; ambientEnabled?: boole
 
         </div>
       </div>
-
-      {/* Dust particles */}
-      {Array.from({ length: 15 }).map((_, i) => (
-        <div key={i} className="absolute w-1 h-1 bg-amber-500/20 rounded-full animate-pulse pointer-events-none" style={{ left: `${5 + i * 7}%`, top: `${30 + Math.sin(i * 0.8) * 20}%`, animationDelay: `${i * 0.2}s`, animationDuration: '4s', zIndex: 6 }} />
-      ))}
 
       {/* Heat shimmer */}
       <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-amber-600/5 to-transparent pointer-events-none" style={{ zIndex: 6 }} />

@@ -105,6 +105,107 @@
 .ambient-tree        { animation: ambient-tree-sway 3.2s ease-in-out infinite; }
 .ambient-grass       { animation: ambient-grass-wave 2.8s ease-in-out infinite; }
 
+/* ── Living ranch animations ─────────────────────────────────────────────────── */
+
+/* Animal idle graze — gentle head bob */
+@keyframes graze-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  20%       { transform: translateY(-2px) rotate(-2deg); }
+  40%       { transform: translateY(1px) rotate(1deg); }
+  60%       { transform: translateY(-1px) rotate(-1deg); }
+  80%       { transform: translateY(2px) rotate(0deg); }
+}
+
+/* Animal idle walk — slow drift left/right then stop */
+@keyframes graze-walk {
+  0%   { transform: translateX(0); }
+  15%  { transform: translateX(8px); }
+  16%  { transform: translateX(8px); }
+  45%  { transform: translateX(-5px); }
+  46%  { transform: translateX(-5px); }
+  75%  { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+
+/* Animal turn — brief horizontal flip mid-walk */
+@keyframes graze-turn {
+  0%, 48%, 100% { transform: scaleX(1); }
+  49%, 74%      { transform: scaleX(-1); }
+}
+
+/* Staff walk path — currais → cercado → barragem → escritório */
+@keyframes campino-walk {
+  0%   { top: 74%; left: 78%; opacity: 0; }
+  3%   { opacity: 0.7; }
+  25%  { top: 60%; left: 38%; }
+  26%  { top: 60%; left: 38%; }
+  50%  { top: 55%; left: 20%; }
+  51%  { top: 55%; left: 20%; }
+  74%  { top: 30%; left: 60%; }
+  75%  { top: 30%; left: 60%; }
+  97%  { top: 15%; left: 76%; opacity: 0.7; }
+  98%  { opacity: 0; }
+  100% { top: 74%; left: 78%; opacity: 0; }
+}
+
+@keyframes campino-walk-b {
+  0%   { top: 60%; left: 35%; opacity: 0; }
+  3%   { opacity: 0.65; }
+  28%  { top: 52%; left: 18%; }
+  29%  { top: 52%; left: 18%; }
+  55%  { top: 74%; left: 78%; }
+  56%  { top: 74%; left: 78%; }
+  80%  { top: 42%; left: 55%; }
+  97%  { top: 60%; left: 35%; opacity: 0.65; }
+  98%  { opacity: 0; }
+  100% { top: 60%; left: 35%; opacity: 0; }
+}
+
+/* Maioral — mostly near office, occasionally drifts to currais */
+@keyframes maioral-wander {
+  0%, 60%  { top: 25%; right: 14%; left: auto; }
+  65%, 85% { top: 62%; right: 10%; left: auto; }
+  90%, 100%{ top: 25%; right: 14%; left: auto; }
+}
+
+/* Dust puff — floats up and fades */
+@keyframes dust-puff {
+  0%   { transform: translateY(0) scale(0.5); opacity: 0.35; }
+  40%  { opacity: 0.2; }
+  100% { transform: translateY(-28px) scale(2.5); opacity: 0; }
+}
+
+/* Cloud ground shadow — sweeps across ground */
+@keyframes ground-shadow {
+  from { transform: translateX(-25%); opacity: 0.07; }
+  to   { transform: translateX(115%); opacity: 0.04; }
+}
+
+/* Daylight pulse — imperceptible slow brightness oscillation */
+@keyframes daylight-pulse {
+  0%, 100% { opacity: 0.04; }
+  50%       { opacity: 0.09; }
+}
+
+/* Distant dust column — heat haze rising from ground */
+@keyframes dust-column {
+  0%   { transform: scaleY(0) translateY(0); opacity: 0; }
+  20%  { opacity: 0.15; }
+  80%  { opacity: 0.08; }
+  100% { transform: scaleY(1) translateY(-40px); opacity: 0; }
+}
+
+.graze-bob   { animation: graze-bob  4.5s ease-in-out infinite; }
+.graze-walk  { animation: graze-walk 18s ease-in-out infinite; }
+.graze-turn  { animation: graze-turn 18s ease-in-out infinite; }
+.campino-a   { animation: campino-walk   48s linear infinite; position: absolute; pointer-events: none; }
+.campino-b   { animation: campino-walk-b 62s linear infinite; position: absolute; pointer-events: none; }
+.maioral-fig { animation: maioral-wander 70s ease-in-out infinite; position: absolute; pointer-events: none; }
+.dust-puff   { animation: dust-puff  6s ease-out infinite; }
+.ground-shadow-anim { animation: ground-shadow 38s linear infinite; }
+.daylight-pulse     { animation: daylight-pulse 22s ease-in-out infinite; }
+.dust-column        { animation: dust-column 12s ease-in-out infinite; }
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
