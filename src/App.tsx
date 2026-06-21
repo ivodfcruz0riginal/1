@@ -17,6 +17,10 @@ import {
   type GameFlowStep,
 } from './core/gameFlow/GameFlowController';
 
+const DevFlowChecklist = import.meta.env.DEV
+  ? React.lazy(() => import('./components/DevFlowChecklist'))
+  : null;
+
 // ── Layout shell ──────────────────────────────────────────────────────────────
 
 interface LayoutProps {
@@ -129,12 +133,20 @@ const GameRoot: React.FC = () => {
   // set in INITIAL_STATE.
   const showDecisionWindow = flowStep === 'FIRST_DECISION' || flowStep === 'NORMAL_GAME';
 
+  // Contract modal only after ranch problem is completed (and only in NORMAL_GAME)
+  const showContractModal = flowStep === 'NORMAL_GAME' && state.firstRanchProblemCompleted;
+
   return (
     <>
       <Layout flowStep={flowStep} onTourComplete={handleTourComplete} />
       {showDecisionWindow && <DecisionWindow />}
-      {flowStep === 'NORMAL_GAME' && <ContractOfferModal />}
+      {showContractModal && <ContractOfferModal />}
       {flowStep === 'OPENING' && <OpeningSequence onComplete={handleOpeningComplete} />}
+      {DevFlowChecklist && (
+        <React.Suspense fallback={null}>
+          <DevFlowChecklist />
+        </React.Suspense>
+      )}
     </>
   );
 };
