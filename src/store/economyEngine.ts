@@ -1,4 +1,4 @@
-import type { Month, Season, GameEvent } from './gameState';
+import type { Month, Season, GameEvent } from './gameTypes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
