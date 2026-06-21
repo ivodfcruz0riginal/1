@@ -79,6 +79,8 @@ export interface GameState {
   guidedTourCompleted: boolean;
   firstDecisionCompleted: boolean;
   firstRanchProblemCompleted: boolean;
+  prestige: number;
+  pendingFenceConsequence: 'delayed' | 'ignored' | null;
 }
 
 export type GameAction =

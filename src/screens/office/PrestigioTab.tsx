@@ -1,10 +1,10 @@
 import React from 'react';
 import { SectionTitle, StatBlock, EmptyState } from './OfficePrimitives';
-
-const PRESTIGE_SCORE = 42;
+import { useGameState } from '../../store/gameState';
 
 const PrestigioTab: React.FC = () => {
-  const pct = PRESTIGE_SCORE;
+  const { state } = useGameState();
+  const pct = state.prestige;
   const segments = 20;
 
   return (

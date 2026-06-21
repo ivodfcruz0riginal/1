@@ -9,7 +9,7 @@ import { animals as initialAnimals } from '../data/animals';
 import { GREETING_DIALOGUE, pickMonthlyDialogue } from '../data/maioralDialogues';
 import type { DialogueTemplate } from '../data/maioralDialogues';
 import { generateDailyTasks } from '../data/dailyTasks';
-import { OPENING_DECISION, NORTH_FENCE_DECISION, pickDecision, nextDecisionInstanceId } from '../data/decisions';
+import { OPENING_DECISION, NORTH_FENCE_DECISION, FENCE_CONSEQUENCE_DELAYED, FENCE_CONSEQUENCE_IGNORED, pickDecision, nextDecisionInstanceId } from '../data/decisions';
 import { INITIAL_LOCATIONS } from '../data/locations';
 import {
   updateLocationCondition,
@@ -141,21 +141,31 @@ function advanceMonthState(state: GameState): GameState {
 
   const newLog = [...newEvents, ...state.eventLog].slice(0, 20);
 
-  // Each month: 70% chance of escritório notification, 30% chance per cercado
+  // Each month: 70% chance of escritório notification, 30% chance per cercado.
+  // Preserve cercado_norte notification while a fence consequence is pending.
   const newNotifications = { ...state.notifications };
   if (Math.random() < 0.7) {
     newNotifications.escritorio = pickNotification(ESCRITORIO_NOTIFICATIONS);
   }
-  if (Math.random() < 0.3) {
+  if (state.pendingFenceConsequence === null && Math.random() < 0.3) {
     newNotifications.cercado_norte = pickNotification(CERCADO_NOTIFICATIONS);
   }
   if (Math.random() < 0.3) {
     newNotifications.cercado_sul = pickNotification(CERCADO_NOTIFICATIONS);
   }
 
-  const newDecision = Math.random() < 0.55
+  // Fence consequence takes priority over random monthly decision
+  let finalDecision = Math.random() < 0.55
     ? pickDecision(state.decisionHistory.slice(0, 3).map(r => r.decisionId))
     : null;
+  let nextFenceConsequence: 'delayed' | 'ignored' | null = null;
+
+  if (state.pendingFenceConsequence === 'delayed') {
+    finalDecision = FENCE_CONSEQUENCE_DELAYED;
+  } else if (state.pendingFenceConsequence === 'ignored') {
+    finalDecision = FENCE_CONSEQUENCE_IGNORED;
+  }
+
   const newDialogue = pickMonthlyDialogue();
 
   return {
@@ -169,16 +179,18 @@ function advanceMonthState(state: GameState): GameState {
     pendingDialogue: newDialogue,
     dialogueHistory: state.dialogueHistory,
     dailyTasks: generateDailyTasks(),
-    pendingDecision: newDecision,
+    pendingDecision: finalDecision,
     decisionHistory: state.decisionHistory,
     locations: state.locations,
     activeLocationId: null,
     hasOpenedBuildingThisMonth: false,
-    phase: computePhase(newDialogue, newDecision, false),
+    phase: computePhase(newDialogue, finalDecision, false),
     openingSequenceCompleted: state.openingSequenceCompleted,
     guidedTourCompleted: state.guidedTourCompleted,
     firstDecisionCompleted: state.firstDecisionCompleted,
     firstRanchProblemCompleted: state.firstRanchProblemCompleted,
+    prestige: state.prestige,
+    pendingFenceConsequence: nextFenceConsequence,
   };
 }
 
@@ -245,7 +257,7 @@ function reducer(state: GameState, action: GameAction): GameState {
         firstDecisionCompleted: true,
       };
 
-      // North fence special effects
+      // North fence special effects (inf_01)
       if (state.pendingDecision.id === 'inf_01') {
         next = { ...next, firstRanchProblemCompleted: true };
         const diaryTexts = [
@@ -270,6 +282,70 @@ function reducer(state: GameState, action: GameAction): GameState {
               'BrokenFence',
             ),
           };
+        } else {
+          // choices 1 (adiar) and 2 (ignorar) schedule a future consequence
+          next = { ...next, pendingFenceConsequence: choiceIdx === 1 ? 'delayed' : 'ignored' };
+        }
+      }
+
+      // Fence deterioration consequence (inf_02)
+      if (state.pendingDecision.id === 'inf_02') {
+        const diaryTexts = [
+          'Vedação do Cercado Norte reparada. Custo: 2.000€.',
+          'Reparação adiada novamente. O risco é agora muito elevado.',
+        ];
+        const ev: GameEvent = { id: nextId(), month: state.month, year: state.year, text: diaryTexts[choiceIdx] ?? diaryTexts[1] };
+        next = { ...next, eventLog: [ev, ...next.eventLog].slice(0, 20) };
+
+        if (choiceIdx === 0) {
+          const withoutNotif = { ...next.notifications };
+          delete withoutNotif.cercado_norte;
+          next = {
+            ...next,
+            economy: { ...next.economy, treasury: next.economy.treasury - 2000 },
+            notifications: withoutNotif,
+            locations: clearLocationNotification(
+              updateLocationCondition(next.locations, 'cercado_norte', 'Good'),
+              'cercado_norte',
+              'BrokenFence',
+            ),
+          };
+        } else {
+          // Escalate to escape scenario
+          next = { ...next, pendingFenceConsequence: 'ignored' };
+        }
+      }
+
+      // Animal escape consequence (inf_03)
+      if (state.pendingDecision.id === 'inf_03') {
+        // Livro da Casa: record the escape event
+        const escapeEv: GameEvent = { id: nextId(), month: state.month, year: state.year, text: 'Dois novilhos fugiram do Cercado Norte durante a noite.' };
+        const diaryTexts = [
+          'Dois novilhos encontrados após fuga do Cercado Norte. Custo: 1.000€.',
+          'Campinos extra chamados. Animais recuperados e vedação reparada. Custo: 2.500€.',
+          'Fuga no Cercado Norte sem resposta adequada. Reputação afectada.',
+        ];
+        const choiceEv: GameEvent = { id: nextId(), month: state.month, year: state.year, text: diaryTexts[choiceIdx] ?? diaryTexts[2] };
+        next = { ...next, eventLog: [choiceEv, escapeEv, ...next.eventLog].slice(0, 20) };
+
+        if (choiceIdx === 0) {
+          next = { ...next, economy: { ...next.economy, treasury: next.economy.treasury - 1000 } };
+        } else if (choiceIdx === 1) {
+          const withoutNotif = { ...next.notifications };
+          delete withoutNotif.cercado_norte;
+          next = {
+            ...next,
+            economy: { ...next.economy, treasury: next.economy.treasury - 2500 },
+            prestige: Math.min(100, next.prestige + 1),
+            notifications: withoutNotif,
+            locations: clearLocationNotification(
+              updateLocationCondition(next.locations, 'cercado_norte', 'Regular'),
+              'cercado_norte',
+              'BrokenFence',
+            ),
+          };
+        } else {
+          next = { ...next, prestige: Math.max(0, next.prestige - 5) };
         }
       }
 
@@ -316,7 +392,7 @@ function reducer(state: GameState, action: GameAction): GameState {
       };
     }
     case 'NEW_GAME':
-      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false, firstDecisionCompleted: false, firstRanchProblemCompleted: false };
+      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false, firstDecisionCompleted: false, firstRanchProblemCompleted: false, prestige: 42, pendingFenceConsequence: null };
     default:
       return state;
   }
@@ -352,6 +428,8 @@ const INITIAL_STATE: GameState = {
   guidedTourCompleted: false,
   firstDecisionCompleted: false,
   firstRanchProblemCompleted: false,
+  prestige: 42,
+  pendingFenceConsequence: null,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -384,6 +462,8 @@ const OPENING_DONE_KEY = 'herdade_opening_done';
 const TOUR_DONE_KEY = 'herdade_tour_done';
 const FIRST_DECISION_DONE_KEY = 'herdade_first_decision_done';
 const RANCH_PROBLEM_DONE_KEY = 'herdade_ranch_problem_done';
+const PRESTIGE_KEY = 'herdade_prestige';
+const FENCE_CONSEQUENCE_KEY = 'herdade_fence_consequence';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -402,6 +482,15 @@ function loadSavedState(): Partial<GameState> {
   } catch {}
   try {
     out.firstRanchProblemCompleted = localStorage.getItem(RANCH_PROBLEM_DONE_KEY) === '1';
+  } catch {}
+  try {
+    const p = localStorage.getItem(PRESTIGE_KEY);
+    if (p !== null) out.prestige = Number(p);
+  } catch {}
+  try {
+    const fc = localStorage.getItem(FENCE_CONSEQUENCE_KEY);
+    if (fc === 'delayed' || fc === 'ignored') out.pendingFenceConsequence = fc;
+    else out.pendingFenceConsequence = null;
   } catch {}
   return out;
 }
@@ -442,6 +531,18 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
   }, [state.firstRanchProblemCompleted]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(PRESTIGE_KEY, String(state.prestige));
+    } catch {}
+  }, [state.prestige]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(FENCE_CONSEQUENCE_KEY, state.pendingFenceConsequence ?? 'null');
+    } catch {}
+  }, [state.pendingFenceConsequence]);
+
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
@@ -478,6 +579,8 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try { localStorage.removeItem(TOUR_DONE_KEY); } catch {}
     try { localStorage.removeItem(FIRST_DECISION_DONE_KEY); } catch {}
     try { localStorage.removeItem(RANCH_PROBLEM_DONE_KEY); } catch {}
+    try { localStorage.removeItem(PRESTIGE_KEY); } catch {}
+    try { localStorage.removeItem(FENCE_CONSEQUENCE_KEY); } catch {}
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };

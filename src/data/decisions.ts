@@ -272,6 +272,42 @@ export const NORTH_FENCE_DECISION: Decision = {
   important: true,
 };
 
+export const FENCE_CONSEQUENCE_DELAYED: Decision = {
+  id: 'inf_02',
+  title: 'Vedação em Mau Estado',
+  category: 'Gestão',
+  description: 'Patrão, a vedação do Cercado Norte piorou com o vento. Ainda conseguimos reparar antes que aconteça pior.',
+  imageHint: 'Vedação degradada com postes partidos ao vento',
+  choices: [
+    'Reparar agora.',
+    'Adiar outra vez.',
+  ],
+  consequences: [
+    'Vedação reparada. Custo: 2.000€. A herdade está segura.',
+    'Reparação adiada novamente. O risco é agora muito elevado.',
+  ],
+  important: true,
+};
+
+export const FENCE_CONSEQUENCE_IGNORED: Decision = {
+  id: 'inf_03',
+  title: 'Fuga no Cercado Norte',
+  category: 'Gestão',
+  description: 'Patrão... tivemos problemas durante a noite. Dois novilhos passaram a vedação.',
+  imageHint: 'Cercado vazio ao amanhecer com vedação partida',
+  choices: [
+    'Procurar animais.',
+    'Chamar campinos extra.',
+    'Não gastar mais.',
+  ],
+  consequences: [
+    'Animais procurados. Custo: 1.000€.',
+    'Campinos extra chamados. Animais recuperados e vedação reparada. Custo: 2.500€.',
+    'Nenhuma acção tomada. A reputação da casa sofreu.',
+  ],
+  important: true,
+};
+
 export function nextDecisionInstanceId(): string {
   return `dec-${++_decisionCounter}-${Date.now()}`;
 }
