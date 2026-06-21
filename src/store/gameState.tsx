@@ -1,15 +1,13 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import {
   INITIAL_ECONOMY,
-  applyMonthToEconomy,
   type EconomyState,
 } from './economyEngine';
-import { applyMonthlyGrowth } from '../utils/animalGrowth';
 import { animals as initialAnimals } from '../data/animals';
-import { GREETING_DIALOGUE, pickMonthlyDialogue } from '../data/maioralDialogues';
+import { GREETING_DIALOGUE } from '../data/maioralDialogues';
 import type { DialogueTemplate } from '../data/maioralDialogues';
 import { generateDailyTasks } from '../data/dailyTasks';
-import { OPENING_DECISION, NORTH_FENCE_DECISION, FENCE_CONSEQUENCE_DELAYED, FENCE_CONSEQUENCE_IGNORED, pickDecision, nextDecisionInstanceId } from '../data/decisions';
+import { OPENING_DECISION, NORTH_FENCE_DECISION, nextDecisionInstanceId } from '../data/decisions';
 import { INITIAL_LOCATIONS } from '../data/locations';
 import {
   updateLocationCondition,
@@ -17,6 +15,7 @@ import {
   clearLocationNotification,
   updateLocationOccupation,
 } from '../services/locationService';
+import { simulateMonth } from '../core/simulation/SimulationEngine';
 
 // ── Re-export types ───────────────────────────────────────────────────────────
 
@@ -80,12 +79,6 @@ import {
 
 export type { EconomyState };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function pickNotification(pool: BuildingNotification[]): BuildingNotification {
-  return pool[Math.floor(Math.random() * pool.length)];
-}
-
 // ── Reducer ──────────────────────────────────────────────────────────────────
 
 function computePhase(
@@ -105,93 +98,8 @@ function nextId(): string {
   return `evt-${++_eventIdCounter}-${Date.now()}`;
 }
 
-function randomRanchEvent(month: Month, year: number): GameEvent {
-  const text = EVENTS_POOL[Math.floor(Math.random() * EVENTS_POOL.length)];
-  return { id: nextId(), month, year, text };
-}
-
 function advanceMonthState(state: GameState): GameState {
-  const currentIdx = MONTHS.indexOf(state.month);
-  const nextIdx = (currentIdx + 1) % 12;
-  const nextMonth = MONTHS[nextIdx];
-  const nextYear = nextIdx === 0 ? state.year + 1 : state.year;
-  const nextSeason = SEASON_MAP[nextMonth];
-
-  const ranchEvent = randomRanchEvent(nextMonth, nextYear);
-
-  const { economy: newEconomy, economicEvent } = applyMonthToEconomy(
-    state.economy,
-    nextMonth,
-    nextYear,
-    nextSeason,
-  );
-
-  const { animals: newAnimals, events: animalEvents } = applyMonthlyGrowth(
-    state.animals,
-    nextMonth,
-    nextYear,
-    nextSeason,
-  );
-
-  const newEvents: GameEvent[] = [ranchEvent];
-  if (economicEvent) newEvents.push(economicEvent);
-  animalEvents.forEach(ev => {
-    newEvents.push({ id: nextId(), month: nextMonth, year: nextYear, text: ev.text });
-  });
-
-  const newLog = [...newEvents, ...state.eventLog].slice(0, 20);
-
-  // Each month: 70% chance of escritório notification, 30% chance per cercado.
-  // Preserve cercado_norte notification while a fence consequence is pending.
-  const newNotifications = { ...state.notifications };
-  if (Math.random() < 0.7) {
-    newNotifications.escritorio = pickNotification(ESCRITORIO_NOTIFICATIONS);
-  }
-  if (state.pendingFenceConsequence === null && Math.random() < 0.3) {
-    newNotifications.cercado_norte = pickNotification(CERCADO_NOTIFICATIONS);
-  }
-  if (Math.random() < 0.3) {
-    newNotifications.cercado_sul = pickNotification(CERCADO_NOTIFICATIONS);
-  }
-
-  // Fence consequence takes priority over random monthly decision
-  let finalDecision = Math.random() < 0.55
-    ? pickDecision(state.decisionHistory.slice(0, 3).map(r => r.decisionId))
-    : null;
-  let nextFenceConsequence: 'delayed' | 'ignored' | null = null;
-
-  if (state.pendingFenceConsequence === 'delayed') {
-    finalDecision = FENCE_CONSEQUENCE_DELAYED;
-  } else if (state.pendingFenceConsequence === 'ignored') {
-    finalDecision = FENCE_CONSEQUENCE_IGNORED;
-  }
-
-  const newDialogue = pickMonthlyDialogue();
-
-  return {
-    year: nextYear,
-    month: nextMonth,
-    season: nextSeason,
-    eventLog: newLog,
-    economy: newEconomy,
-    animals: newAnimals,
-    notifications: newNotifications,
-    pendingDialogue: newDialogue,
-    dialogueHistory: state.dialogueHistory,
-    dailyTasks: generateDailyTasks(),
-    pendingDecision: finalDecision,
-    decisionHistory: state.decisionHistory,
-    locations: state.locations,
-    activeLocationId: null,
-    hasOpenedBuildingThisMonth: false,
-    phase: computePhase(newDialogue, finalDecision, false),
-    openingSequenceCompleted: state.openingSequenceCompleted,
-    guidedTourCompleted: state.guidedTourCompleted,
-    firstDecisionCompleted: state.firstDecisionCompleted,
-    firstRanchProblemCompleted: state.firstRanchProblemCompleted,
-    prestige: state.prestige,
-    pendingFenceConsequence: nextFenceConsequence,
-  };
+  return simulateMonth(state).state;
 }
 
 function reducer(state: GameState, action: GameAction): GameState {
