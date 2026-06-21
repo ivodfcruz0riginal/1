@@ -174,9 +174,19 @@ const Header: React.FC = () => {
 
         {/* Right: Stats */}
         <div className="flex items-center gap-3">
-          <StatBadge icon="👑" value="250" label="Prestígio" />
+          <StatBadge icon="👑" value={state.prestige} label="Prestígio" />
           <StatBadge icon="💶" value={formatEuro(state.economy.treasury)} label="Tesouraria" highlight />
-          <StatBadge icon="🐂" value="42" label="Efetivo" />
+          <StatBadge
+            icon="🐂"
+            value={state.animals.filter(a => a.status !== 'Morto' && a.status !== 'Vendido').length}
+            label="Efetivo"
+          />
+          {state.pendingContract && (
+            <div className="relative flex items-center justify-center w-9 h-9 bg-gold/10 border border-gold/40 rounded-md">
+              <span className="text-lg">📬</span>
+              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-gold rounded-full border border-leather-900 animate-pulse" />
+            </div>
+          )}
         </div>
       </div>
 

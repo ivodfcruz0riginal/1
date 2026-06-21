@@ -1,18 +1,20 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useGameState } from '../store/gameState';
 
 interface SidebarItemProps {
   icon: React.ReactNode;
   label: string;
   to: string;
-  badge?: number;
+  badge?: number | string;
+  dim?: boolean;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, to, badge }) => (
+const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, to, badge, dim }) => (
   <NavLink
     to={to}
     className={({ isActive }) =>
-      `relative group ${isActive ? 'sidebar-item-active' : 'sidebar-item'} flex items-center gap-3 px-4 py-3 transition-all duration-200 cursor-pointer rounded-md mx-2`
+      `relative group ${isActive ? 'sidebar-item-active' : 'sidebar-item'} flex items-center gap-3 px-4 py-3 transition-all duration-200 cursor-pointer rounded-md mx-2 ${dim ? 'opacity-45' : ''}`
     }
   >
     {({ isActive }) => (
@@ -32,15 +34,9 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, to, badge }) => 
 );
 
 const Sidebar: React.FC = () => {
-  const menuItems = [
-    { icon: '🏘️', label: 'Herdade', to: '/herdade' },
-    { icon: '🏛️', label: 'Escritório', to: '/escritorio' },
-    { icon: '🐂', label: 'Efetivo', to: '/efetivo', badge: 42 },
-    { icon: '❤️', label: 'Reprodução', to: '/reproducao' },
-    { icon: '🎯', label: 'Tentas', to: '/tentas' },
-    { icon: '🏇', label: 'Corridas', to: '/corridas' },
-    { icon: '⚙️', label: 'Definições', to: '/definicoes' },
-  ];
+  const { state } = useGameState();
+  const activeAnimals = state.animals.filter(a => a.status !== 'Morto' && a.status !== 'Vendido').length;
+  const pendingContracts = (state.contracts ?? []).filter(c => c.status === 'Pendente' || c.status === 'Aceite').length;
 
   return (
     <aside className="w-60 bg-leather-900 border-r-2 border-gold/20 flex flex-col h-screen">
@@ -67,16 +63,20 @@ const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 overflow-y-auto">
-        {menuItems.map((item) => (
-          <SidebarItem
-            key={item.to}
-            icon={item.icon}
-            label={item.label}
-            to={item.to}
-            badge={item.badge}
-          />
-        ))}
+      <nav className="flex-1 py-4 overflow-y-auto space-y-0.5">
+        <SidebarItem icon="🏘️" label="Herdade"   to="/herdade" />
+        <SidebarItem icon="🏛️" label="Escritório" to="/escritorio" badge={pendingContracts > 0 ? pendingContracts : undefined} />
+        <SidebarItem icon="🐂" label="Efetivo"    to="/efetivo" badge={activeAnimals} />
+
+        <div className="mx-4 my-2 h-px bg-leather-700/40" />
+
+        <SidebarItem icon="❤️" label="Reprodução" to="/reproducao" dim />
+        <SidebarItem icon="🎯" label="Tentas"      to="/tentas"     dim />
+        <SidebarItem icon="🏇" label="Corridas"    to="/corridas"   dim />
+
+        <div className="mx-4 my-2 h-px bg-leather-700/40" />
+
+        <SidebarItem icon="⚙️" label="Definições"  to="/definicoes" dim />
       </nav>
 
       {/* Footer decoration */}

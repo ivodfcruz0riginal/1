@@ -2,10 +2,26 @@ import React from 'react';
 import { SectionTitle, StatBlock, EmptyState } from './OfficePrimitives';
 import { useGameState } from '../../store/gameState';
 
+function getTier(pct: number): { label: string; desc: string } {
+  if (pct >= 75) return { label: 'Internacional', desc: 'A ganaderia é reconhecida além-fronteiras. Os melhores touros são disputados pelas grandes praças.' };
+  if (pct >= 50) return { label: 'Nacional',      desc: 'A reputação da ganaderia chega a todo o país. As praças de primeira categoria já procuram os vossos animais.' };
+  if (pct >= 25) return { label: 'Regional',      desc: 'O nome da ganaderia começa a circular pela região. Continue a criar toiros de qualidade e a honrar os contratos.' };
+  return { label: 'Desconhecida', desc: 'A ganaderia está a dar os primeiros passos. Aceite contratos, crie bons toiros e tome decisões acertadas para crescer.' };
+}
+
+function getNextGoal(pct: number): string {
+  if (pct >= 75) return 'Mantenha a classificação internacional cumprindo os contratos e garantindo bravura nos animais.';
+  if (pct >= 50) return `Precisa de ${75 - pct} pontos para atingir prestígio Internacional. Aceite corridas de renome e negoceie bem.`;
+  if (pct >= 25) return `Precisa de ${50 - pct} pontos para prestígio Nacional. Crie toiros bravos e honre os contratos aceites.`;
+  return `Precisa de ${25 - pct} pontos para prestígio Regional. Avance meses, resolva as tarefas e aceite o primeiro contrato.`;
+}
+
 const PrestigioTab: React.FC = () => {
   const { state } = useGameState();
   const pct = state.prestige;
   const segments = 20;
+  const tier = getTier(pct);
+  const nextGoal = getNextGoal(pct);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -46,10 +62,10 @@ const PrestigioTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Ranking placeholders */}
+      {/* Tier + next goal */}
       <div className="grid grid-cols-2 gap-3 mb-5 shrink-0">
-        <StatBlock label="Classificação Regional" value="—" sub="Disponível brevemente" />
-        <StatBlock label="Classificação Nacional" value="—" sub="Disponível brevemente" />
+        <StatBlock label="Classificação Actual" value={tier.label} sub={tier.desc} />
+        <StatBlock label="Próximo Objectivo" value="↑" sub={nextGoal} />
       </div>
 
       {/* Achievements placeholder */}
@@ -64,3 +80,4 @@ const PrestigioTab: React.FC = () => {
 };
 
 export default PrestigioTab;
+

@@ -19,7 +19,7 @@ const PlaceholderPage: React.FC<PlaceholderPageProps> = ({ title, subtitle }) =>
 
         <div className="flex items-center justify-center gap-3">
           <div className="w-12 h-px bg-gradient-to-r from-transparent to-gold/40"></div>
-          <p className="text-ivory/40 text-xs font-body uppercase tracking-widest">Work in progress</p>
+          <p className="text-ivory/40 text-xs font-body uppercase tracking-widest">Disponível na próxima temporada</p>
           <div className="w-12 h-px bg-gradient-to-l from-transparent to-gold/40"></div>
         </div>
       </div>

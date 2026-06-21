@@ -40,10 +40,8 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, onAction, onIgnore }) => {
       onClick={isPending ? () => onAction(task) : undefined}
       title={isPending ? (task.destination.kind === 'route' ? `Abrir ${task.destination.path.replace('/', '')}` : task.destination.name) : undefined}
     >
-      {/* Type dot */}
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${TYPE_DOT[task.type]}`} />
 
-      {/* Label */}
       <div className="flex-1 min-w-0">
         <p className={`text-[11px] font-body leading-tight ${
           isDone    ? 'text-ivory/35 line-through' :
@@ -61,14 +59,9 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, onAction, onIgnore }) => {
         </p>
       </div>
 
-      {/* Status / actions */}
       <div className="shrink-0 flex items-center">
-        {isDone && (
-          <span className="text-emerald-500/70 text-[11px]">✓</span>
-        )}
-        {isIgnored && (
-          <span className="text-ivory/20 text-[11px]">—</span>
-        )}
+        {isDone    && <span className="text-emerald-500/70 text-[11px]">✓</span>}
+        {isIgnored && <span className="text-ivory/20 text-[11px]">—</span>}
         {isPending && (
           <button
             className="text-ivory/15 hover:text-ivory/50 text-xs leading-none transition-colors opacity-0 group-hover:opacity-100 px-1"
@@ -83,12 +76,36 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, onAction, onIgnore }) => {
   );
 };
 
+// ── Objective hint ────────────────────────────────────────────────────────────
+
+function useObjectiveHint(): string {
+  const { state } = useGameState();
+  const { pendingContract, contracts, prestige, openingSequenceCompleted, simulatedMonths } = state;
+
+  if (pendingContract) return 'Há uma proposta de contrato à espera da sua resposta.';
+
+  const activeContracts = (contracts ?? []).filter(c => c.status === 'Pendente' || c.status === 'Aceite');
+  if (activeContracts.length > 0) {
+    return `Tem ${activeContracts.length} contrato(s) activo(s). Avance o mês para progredir.`;
+  }
+
+  if (openingSequenceCompleted && simulatedMonths < 2) {
+    const remaining = 2 - simulatedMonths;
+    return `Avance mais ${remaining} ${remaining === 1 ? 'mês' : 'meses'} para receber a primeira proposta de corrida.`;
+  }
+
+  if (prestige === 0) return 'Tome decisões e resolva tarefas para começar a construir o prestígio da ganaderia.';
+
+  return 'Avance o mês para continuar a temporada.';
+}
+
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 const TasksPanel: React.FC = () => {
   const { state, completeTask, ignoreTask } = useGameState();
   const navigate = useNavigate();
   const { dailyTasks } = state;
+  const objectiveHint = useObjectiveHint();
 
   const [expanded, setExpanded]   = useState(true);
   const [buildingMsg, setBuildingMsg] = useState<string | null>(null);
@@ -146,7 +163,7 @@ const TasksPanel: React.FC = () => {
               ))}
             </div>
 
-            {/* Building coming-soon message */}
+            {/* Building hint message */}
             {buildingMsg && (
               <div className="mx-3 mb-2 px-3 py-2 bg-leather-800/50 border border-leather-600/30 rounded">
                 <p className="text-ivory/45 text-[10px] font-body leading-snug">{buildingMsg}</p>
@@ -159,11 +176,11 @@ const TasksPanel: React.FC = () => {
               </div>
             )}
 
-            {/* Day complete */}
+            {/* Day complete + objective */}
             {allResolved && (
-              <div className="mx-3 mb-3 mt-1 px-3 py-2 bg-gold/8 border border-gold/25 rounded text-center">
-                <p className="text-gold text-[11px] font-display tracking-wider">O dia está completo.</p>
-                <p className="text-ivory/30 text-[9px] font-body mt-0.5">Pode avançar o mês.</p>
+              <div className="mx-3 mb-3 mt-1 px-3 py-2 bg-gold/8 border border-gold/25 rounded">
+                <p className="text-gold text-[11px] font-display tracking-wider text-center">O dia está completo.</p>
+                <p className="text-ivory/40 text-[9px] font-body mt-1.5 leading-snug">{objectiveHint}</p>
               </div>
             )}
 

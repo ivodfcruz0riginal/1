@@ -4,14 +4,15 @@ import type { GameEvent } from '../../store/gameState';
 import type { DecisionRecord } from '../../store/gameTypes';
 import { SectionTitle, EmptyState, Pill } from './OfficePrimitives';
 
-type FilterKey = 'Todos' | 'Animais' | 'Economia' | 'Pessoal' | 'Meteorologia' | 'Saúde';
+type FilterKey = 'Todos' | 'Animais' | 'Economia' | 'Contratos' | 'Pessoal' | 'Meteorologia' | 'Saúde';
 
-const FILTERS: FilterKey[] = ['Todos', 'Animais', 'Economia', 'Pessoal', 'Meteorologia', 'Saúde'];
+const FILTERS: FilterKey[] = ['Todos', 'Animais', 'Economia', 'Contratos', 'Pessoal', 'Meteorologia', 'Saúde'];
 
 const FILTER_KEYWORDS: Record<FilterKey, string[]> = {
   Todos: [],
   Animais: ['vitelo', 'animal', 'novilho', 'toiro', 'vaca', 'semental', 'efetivo', 'cercado', 'bravura', 'peso', 'saúde', 'sanitário', 'condição'],
   Economia: ['€', 'subsídio', 'receita', 'despesa', 'lucro', 'financ', 'econom', 'venda', 'compra', 'leilão', 'preço'],
+  Contratos: ['contrato', 'praça', 'corrida', 'adiantamento', 'reserv', 'aceite', 'recusad', 'negociad'],
   Pessoal: ['trabalhador', 'pessoal', 'reforma', 'visita', 'ganadeiro', 'veterinário', 'parceria', 'acordo'],
   Meteorologia: ['seca', 'chuva', 'húmid', 'quente', 'frio', 'vento', 'tempo', 'pastage', 'feno'],
   Saúde: ['doença', 'saúde', 'veterinário', 'recuperação', 'lesão', 'sanitário', 'anomalia', 'respiratória'],
