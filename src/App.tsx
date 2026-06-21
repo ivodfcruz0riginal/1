@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -10,10 +10,20 @@ import EfetivoScreen from './screens/EfetivoScreen';
 import EconomyScreen from './screens/EconomyScreen';
 import EscritorioScreen from './screens/EscritorioScreen';
 import { GameStateProvider, useGameState } from './store/gameState';
+import {
+  getGameFlowStep,
+  readDebugFlags,
+  type GameFlowStep,
+} from './core/gameFlow/GameFlowController';
 
 // ── Layout shell ──────────────────────────────────────────────────────────────
 
-const Layout: React.FC<{ showTour: boolean; onTourComplete: () => void }> = ({ showTour, onTourComplete }) => (
+interface LayoutProps {
+  flowStep: GameFlowStep;
+  onTourComplete: () => void;
+}
+
+const Layout: React.FC<LayoutProps> = ({ flowStep, onTourComplete }) => (
   <div className="min-h-screen bg-leather-900 flex overflow-hidden">
     <div
       className="fixed inset-0 pointer-events-none opacity-[0.04]"
@@ -31,7 +41,15 @@ const Layout: React.FC<{ showTour: boolean; onTourComplete: () => void }> = ({ s
       <div className="flex-1 relative overflow-hidden">
         <Routes>
           <Route path="/" element={<Navigate to="/herdade" replace />} />
-          <Route path="/herdade" element={<HerdadeScreen showTour={showTour} onTourComplete={onTourComplete} />} />
+          <Route
+            path="/herdade"
+            element={
+              <HerdadeScreen
+                showTour={flowStep === 'GUIDED_TOUR'}
+                onTourComplete={onTourComplete}
+              />
+            }
+          />
           <Route path="/escritorio" element={<EscritorioScreen />} />
           <Route path="/efetivo" element={<EfetivoScreen />} />
           <Route path="/reproducao" element={<PlaceholderPage title="Reprodução" subtitle="Programa de reprodução e genética" />} />
@@ -44,43 +62,64 @@ const Layout: React.FC<{ showTour: boolean; onTourComplete: () => void }> = ({ s
         </Routes>
       </div>
     </div>
-
-    <DecisionWindow />
   </div>
 );
 
-// ── Game root — inside GameStateProvider, reads state to control sequences ────
+// ── Game root — single flow decision point ────────────────────────────────────
 
 const GameRoot: React.FC = () => {
   const { state, completeIntro } = useGameState();
 
-  const params = new URLSearchParams(window.location.search);
-  const forceIntro = params.get('intro') === 'true';
-  const forceTour  = params.get('tour')  === 'true';
+  // Read URL debug flags once at mount — force flags are consumed when the
+  // matching overlay sequence completes, so they never loop.
+  const debugFlags = useRef(readDebugFlags()).current;
 
-  // Opening: show when not completed, or forced via ?intro=true
-  const openingDone = state.openingSequenceCompleted && !forceIntro;
-  const [showOpening, setShowOpening] = useState(() => !openingDone);
+  // Determine the initial step using the controller (includes debug flags).
+  const initialStep = useRef(getGameFlowStep(state, debugFlags)).current;
 
-  // Tour: show when opening already done + tour not done, or forced via ?tour=true
-  const [showTour, setShowTour] = useState(
-    () => (openingDone && !state.guidedTourCompleted) || forceTour
-  );
+  // Overlay sequences use local state so exit animations can play before
+  // the game state changes and the reactive step advances.
+  const [showOpening, setShowOpening] = useState(() => initialStep === 'OPENING');
+  const [showTour,    setShowTour]    = useState(() => initialStep === 'GUIDED_TOUR');
+
+  // For FIRST_DECISION → NORMAL_GAME, there is no animation overlay:
+  // derive reactively from game state (no debug flags needed here).
+  const stateStep = getGameFlowStep(state, { forceOpening: false, forceTour: false });
+
+  // Single flowStep drives ALL rendering — no scattered conditions elsewhere.
+  const flowStep: GameFlowStep =
+    showOpening ? 'OPENING'
+    : showTour  ? 'GUIDED_TOUR'
+    : stateStep; // 'FIRST_DECISION' or 'NORMAL_GAME'
+
+  // ── Sequence completion handlers ──────────────────────────────────────────
 
   const handleOpeningComplete = () => {
     completeIntro();
     setShowOpening(false);
-    if (!state.guidedTourCompleted || forceTour) {
+    // Show tour if not yet done (or forced). Read from current state snapshot
+    // since completeIntro() hasn't flushed yet.
+    if (!state.guidedTourCompleted || debugFlags.forceTour) {
       setShowTour(true);
     }
   };
 
+  // Tour unmounts itself via completeTour() state change after its animation;
+  // this callback is the acknowledgment hook from HerdadeScreen.
   const handleTourComplete = () => setShowTour(false);
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  // DecisionWindow is suppressed during OPENING and GUIDED_TOUR — it would
+  // otherwise show over the intro sequence since pendingDecision is already
+  // set in INITIAL_STATE.
+  const showDecisionWindow = flowStep === 'FIRST_DECISION' || flowStep === 'NORMAL_GAME';
 
   return (
     <>
-      <Layout showTour={showTour} onTourComplete={handleTourComplete} />
-      {showOpening && <OpeningSequence onComplete={handleOpeningComplete} />}
+      <Layout flowStep={flowStep} onTourComplete={handleTourComplete} />
+      {showDecisionWindow && <DecisionWindow />}
+      {flowStep === 'OPENING' && <OpeningSequence onComplete={handleOpeningComplete} />}
     </>
   );
 };

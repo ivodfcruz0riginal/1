@@ -77,6 +77,7 @@ export interface GameState {
   hasOpenedBuildingThisMonth: boolean;
   openingSequenceCompleted: boolean;
   guidedTourCompleted: boolean;
+  firstDecisionCompleted: boolean;
 }
 
 export type GameAction =

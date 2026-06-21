@@ -89,11 +89,13 @@ const GuidedTour: React.FC<Props> = ({ onHighlight, onComplete }) => {
 
   const finish = () => {
     onHighlight(null);
-    addGameEvent('O Maioral apresentou a Herdade ao novo ganadeiro.');
-    completeTour();
     setVisible(false);
     setPhase('exiting');
-    setTimeout(onComplete, 700);
+    setTimeout(() => {
+      addGameEvent('O Maioral apresentou a Herdade ao novo ganadeiro.');
+      completeTour();
+      onComplete();
+    }, 700);
   };
 
   const currentStep = TOUR_STEPS[step];

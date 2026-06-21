@@ -175,6 +175,9 @@ function advanceMonthState(state: GameState): GameState {
     activeLocationId: null,
     hasOpenedBuildingThisMonth: false,
     phase: computePhase(newDialogue, newDecision, false),
+    openingSequenceCompleted: state.openingSequenceCompleted,
+    guidedTourCompleted: state.guidedTourCompleted,
+    firstDecisionCompleted: state.firstDecisionCompleted,
   };
 }
 
@@ -238,6 +241,7 @@ function reducer(state: GameState, action: GameAction): GameState {
         pendingDecision: null,
         decisionHistory: [record, ...state.decisionHistory],
         phase: computePhase(state.pendingDialogue, null, state.hasOpenedBuildingThisMonth),
+        firstDecisionCompleted: true,
       };
     }
     case 'SET_ACTIVE_LOCATION': {
@@ -268,7 +272,7 @@ function reducer(state: GameState, action: GameAction): GameState {
     case 'COMPLETE_TOUR':
       return { ...state, guidedTourCompleted: true };
     case 'NEW_GAME':
-      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false };
+      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false, firstDecisionCompleted: false };
     default:
       return state;
   }
@@ -302,6 +306,7 @@ const INITIAL_STATE: GameState = {
   phase: 'MonthStart' as GamePhase,
   openingSequenceCompleted: false,
   guidedTourCompleted: false,
+  firstDecisionCompleted: false,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -331,6 +336,7 @@ const GameStateContext = createContext<GameStateContextValue | null>(null);
 const DECISIONS_STORAGE_KEY = 'herdade_decisions';
 const OPENING_DONE_KEY = 'herdade_opening_done';
 const TOUR_DONE_KEY = 'herdade_tour_done';
+const FIRST_DECISION_DONE_KEY = 'herdade_first_decision_done';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -343,6 +349,9 @@ function loadSavedState(): Partial<GameState> {
   } catch {}
   try {
     out.guidedTourCompleted = localStorage.getItem(TOUR_DONE_KEY) === '1';
+  } catch {}
+  try {
+    out.firstDecisionCompleted = localStorage.getItem(FIRST_DECISION_DONE_KEY) === '1';
   } catch {}
   return out;
 }
@@ -370,6 +379,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       localStorage.setItem(TOUR_DONE_KEY, state.guidedTourCompleted ? '1' : '0');
     } catch {}
   }, [state.guidedTourCompleted]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(FIRST_DECISION_DONE_KEY, state.firstDecisionCompleted ? '1' : '0');
+    } catch {}
+  }, [state.firstDecisionCompleted]);
 
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
@@ -403,6 +418,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const startNewGame = () => {
     try { localStorage.removeItem(OPENING_DONE_KEY); } catch {}
     try { localStorage.removeItem(TOUR_DONE_KEY); } catch {}
+    try { localStorage.removeItem(FIRST_DECISION_DONE_KEY); } catch {}
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };
