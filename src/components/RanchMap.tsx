@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useGameState } from '../store/gameState';
 import type { BuildingKey, BuildingNotification, LocationId } from '../store/gameState';
+import { deriveLocationStatus } from '../utils/locationStatus';
+import type { LocationStatus } from '../utils/locationStatus';
 
 export type TimeOfDay = 'manha' | 'tarde' | 'entardecer' | 'noite';
 
@@ -133,13 +135,13 @@ const NotificationBadge: React.FC<{ n: BuildingNotification }> = ({ n }) => (
   </div>
 );
 
-const BuildingTooltip: React.FC<{ name: string; hint: string; visible: boolean }> = ({ name, hint, visible }) => (
+const BuildingTooltip: React.FC<{ name: string; hint: string; visible: boolean; status?: LocationStatus }> = ({ name, hint, visible, status }) => (
   <div className={`absolute -top-14 left-1/2 -translate-x-1/2 z-30 pointer-events-none transition-all duration-200 ${visible ? 'opacity-100 -translate-y-0' : 'opacity-0 translate-y-1'}`}>
     <div className="relative bg-leather-900/98 border border-gold/50 rounded px-3 py-2 shadow-xl whitespace-nowrap">
       <div className="absolute -top-0.5 -left-0.5 w-2 h-2 border-t border-l border-gold/50" />
       <div className="absolute -top-0.5 -right-0.5 w-2 h-2 border-t border-r border-gold/50" />
       <p className="font-display text-xs text-gold tracking-widest uppercase">{name}</p>
-      <p className="text-ivory/50 text-[10px] font-body mt-0.5">{hint}</p>
+      <p className="text-ivory/50 text-[10px] font-body mt-0.5">{status?.message ?? hint}</p>
       <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-leather-900/98 border-b border-r border-gold/50 rotate-45" />
     </div>
   </div>
@@ -321,6 +323,20 @@ const ActivityDot: React.FC<{ visible: boolean }> = ({ visible }) => {
   );
 };
 
+// ── Status dot — communicates location health at a glance ─────────────────────
+
+const STATUS_COLORS = {
+  ok:       'bg-emerald-500/55',
+  warn:     'bg-amber-500/70',
+  critical: 'bg-red-500/75',
+} as const;
+
+const StatusDot: React.FC<{ status: LocationStatus }> = ({ status }) => (
+  <div className="absolute bottom-1.5 left-1.5 z-20 pointer-events-none">
+    <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[status.level]} ${status.level === 'critical' ? 'animate-pulse' : ''}`} />
+  </div>
+);
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 const RanchMap: React.FC<{
@@ -361,6 +377,16 @@ const RanchMap: React.FC<{
     noite:      { from: 'from-slate-900/90',     via: 'via-indigo-950/60' },
   };
   const sky = skyGradients[tod.period];
+
+  const statuses = useMemo(() => ({
+    cercado_norte: deriveLocationStatus('cercado_norte', state),
+    cercado_sul:   deriveLocationStatus('cercado_sul',   state),
+    tentadero:     deriveLocationStatus('tentadero',     state),
+    escritorio:    deriveLocationStatus('escritorio',    state),
+    casa:          deriveLocationStatus('casa',          state),
+    currais:       deriveLocationStatus('currais',       state),
+    embarque:      deriveLocationStatus('embarque',      state),
+  }), [state]);
 
   return (
     <div className="relative h-full overflow-hidden">
@@ -584,7 +610,7 @@ const RanchMap: React.FC<{
               <div className={`absolute top-2 left-1/2 -translate-x-1/2 transition-all duration-200 ${hovered === 'norte' ? 'opacity-100' : 'opacity-0'}`}>
                 <div className="bg-leather-900/95 border border-gold/50 rounded px-3 py-1.5 shadow-lg whitespace-nowrap">
                   <p className="font-display text-xs text-gold tracking-widest uppercase">Cercado Norte</p>
-                  <p className="text-ivory/50 text-[10px] font-body">24 animais · Pastagem activa</p>
+                  <p className="text-ivory/50 text-[10px] font-body">{statuses.cercado_norte.message}</p>
                 </div>
               </div>
             </div>
@@ -609,6 +635,7 @@ const RanchMap: React.FC<{
               <div className="absolute top-2 right-2 z-10"><NotificationBadge n={notifications.cercado_norte} /></div>
             )}
             <ActivityDot visible={!!occupiedLocations?.has('cercado_norte')} />
+            <StatusDot status={statuses.cercado_norte} />
             {highlightedId === 'cercado_norte' && (
               <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
             )}
@@ -634,7 +661,7 @@ const RanchMap: React.FC<{
               <div className={`absolute top-2 left-1/2 -translate-x-1/2 transition-all duration-200 ${hovered === 'sul' ? 'opacity-100' : 'opacity-0'}`}>
                 <div className="bg-leather-900/95 border border-gold/50 rounded px-3 py-1.5 shadow-lg whitespace-nowrap">
                   <p className="font-display text-xs text-gold tracking-widest uppercase">Cercado Sul</p>
-                  <p className="text-ivory/50 text-[10px] font-body">16 animais · Pastagem activa</p>
+                  <p className="text-ivory/50 text-[10px] font-body">{statuses.cercado_sul.message}</p>
                 </div>
               </div>
             </div>
@@ -659,6 +686,7 @@ const RanchMap: React.FC<{
               <div className="absolute top-2 right-2 z-10"><NotificationBadge n={notifications.cercado_sul} /></div>
             )}
             <ActivityDot visible={!!occupiedLocations?.has('cercado_sul')} />
+            <StatusDot status={statuses.cercado_sul} />
             {highlightedId === 'cercado_sul' && (
               <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
             )}
@@ -673,6 +701,7 @@ const RanchMap: React.FC<{
           >
             {notifications.tentadero && <NotificationBadge n={notifications.tentadero} />}
             <ActivityDot visible={!!occupiedLocations?.has('tentadero')} />
+            <StatusDot status={statuses.tentadero} />
             {highlightedId === 'tentadero' && (
               <div className="absolute inset-0 rounded-full border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
             )}
@@ -691,7 +720,7 @@ const RanchMap: React.FC<{
               <div className="w-2 h-2 bg-gold/30 rounded-full" />
             </div>
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-4 bg-leather-800/80 border-2 border-leather-600/40 rounded-t" />
-            <BuildingTooltip name="Tentadero" hint="Arena de provas" visible={hovered === 'tentadero'} />
+            <BuildingTooltip name="Tentadero" hint="Arena de provas" visible={hovered === 'tentadero'} status={statuses.tentadero} />
           </div>
 
           {/* ── ESCRITÓRIO ── */}
@@ -704,10 +733,11 @@ const RanchMap: React.FC<{
           >
             {notifications.escritorio && <NotificationBadge n={notifications.escritorio} />}
             <ActivityDot visible={!!occupiedLocations?.has('escritorio')} />
+            <StatusDot status={statuses.escritorio} />
             {highlightedId === 'escritorio' && (
               <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
             )}
-            <BuildingTooltip name="Escritório" hint="Centro de administração" visible={hovered === 'escritorio'} />
+            <BuildingTooltip name="Escritório" hint="Centro de administração" visible={hovered === 'escritorio'} status={statuses.escritorio} />
             <div className="absolute inset-0 bg-black/30 translate-y-2 translate-x-1 rounded pointer-events-none" />
             <div className={`absolute inset-0 rounded shadow-lg border-2 transition-all duration-300 ${hovered === 'escritorio' ? 'bg-leather-700/95 border-gold/50 shadow-gold/20' : 'bg-leather-800/90 border-leather-600/60'}`}>
               <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[60px] border-r-[60px] border-b-[32px] border-l-transparent border-r-transparent border-b-amber-900/80 pointer-events-none" />
@@ -745,7 +775,8 @@ const RanchMap: React.FC<{
           >
             {notifications.casa && <NotificationBadge n={notifications.casa} />}
             <ActivityDot visible={!!occupiedLocations?.has('casa')} />
-            <BuildingTooltip name="Casa Principal" hint="Residência da herdade" visible={hovered === 'casa'} />
+            <StatusDot status={statuses.casa} />
+            <BuildingTooltip name="Casa Principal" hint="Residência da herdade" visible={hovered === 'casa'} status={statuses.casa} />
             <div className="absolute inset-0 bg-black/30 translate-y-2 translate-x-1 rounded pointer-events-none" />
             <div className={`absolute inset-0 rounded shadow-lg border-2 transition-all duration-300 ${hovered === 'casa' ? 'bg-leather-700/95 border-gold/40 shadow-gold/15' : 'bg-leather-800/80 border-leather-600/50'}`}>
               <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[72px] border-r-[72px] border-b-[40px] border-l-transparent border-r-transparent border-b-amber-900/70 pointer-events-none" />
@@ -782,10 +813,11 @@ const RanchMap: React.FC<{
           >
             {notifications.currais && <NotificationBadge n={notifications.currais} />}
             <ActivityDot visible={!!occupiedLocations?.has('currais')} />
+            <StatusDot status={statuses.currais} />
             {highlightedId === 'currais' && (
               <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
             )}
-            <BuildingTooltip name="Currais" hint="8 toiros em manga" visible={hovered === 'currais'} />
+            <BuildingTooltip name="Currais" hint="8 toiros em manga" visible={hovered === 'currais'} status={statuses.currais} />
             <div className={`absolute inset-0 rounded border-2 overflow-hidden transition-all duration-300 ${hovered === 'currais' ? 'border-gold/50 shadow-md shadow-gold/10' : 'border-leather-600/50'}`}>
               <div className={`absolute inset-0 bg-gold/5 transition-opacity duration-300 ${hovered === 'currais' ? 'opacity-100' : 'opacity-0'}`} />
               <div className="absolute inset-0 grid grid-cols-4 gap-0.5 bg-leather-900/20">
@@ -816,10 +848,11 @@ const RanchMap: React.FC<{
             style={{ zIndex: 10 }}
           >
             {notifications.embarque && <NotificationBadge n={notifications.embarque} />}
+            <StatusDot status={statuses.embarque} />
             {highlightedId === 'embarque' && (
               <div className="absolute inset-0 rounded border-2 border-gold/70 shadow-xl shadow-gold/40 pointer-events-none z-20 animate-pulse" />
             )}
-            <BuildingTooltip name="Parque de Embarque" hint="Carga e transporte" visible={hovered === 'embarque'} />
+            <BuildingTooltip name="Parque de Embarque" hint="Carga e transporte" visible={hovered === 'embarque'} status={statuses.embarque} />
             <div className={`absolute inset-0 rounded border-2 shadow-lg transition-all duration-300 ${hovered === 'embarque' ? 'border-gold/40 shadow-gold/10' : 'border-leather-600/50'}`}>
               <div className="absolute inset-0 bg-gradient-to-b from-leather-700/80 via-leather-600/60 to-leather-700 rounded" />
               <div className={`absolute inset-0 bg-gold/5 rounded transition-opacity duration-300 ${hovered === 'embarque' ? 'opacity-100' : 'opacity-0'}`} />
