@@ -49,6 +49,7 @@ export type {
   Decision,
   DecisionCategory,
   DecisionRecord,
+  ConsequenceEntry,
   Location,
   LocationId,
   LocationCondition,
@@ -71,6 +72,7 @@ import type {
   BuildingNotification,
   DialogueRecord,
   DecisionRecord,
+  ConsequenceEntry,
   GameState,
   GameAction,
   LocationId,
@@ -216,6 +218,29 @@ function reducer(state: GameState, action: GameAction): GameState {
         firstDecisionCompleted: true,
       };
 
+      // ── Consequence chain helpers ───────────────────────────────────────────
+      // Find the root instance id for a given decisionId in the history.
+      // After decisionHistory is updated, the newest record is index 0.
+      const findOriginId = (decisionId: string): string => {
+        const found = next.decisionHistory.find(r => r.decisionId === decisionId);
+        return found?.instanceId ?? record.instanceId;
+      };
+
+      const addConsequence = (
+        originInstanceId: string,
+        text: string,
+        severity: ConsequenceEntry['severity'],
+        resolved: boolean,
+      ): ConsequenceEntry => ({
+        id: nextId(),
+        originDecisionInstanceId: originInstanceId,
+        month: state.month,
+        year: state.year,
+        text,
+        severity,
+        resolved,
+      });
+
       // North fence special effects (inf_01)
       if (state.pendingDecision.id === 'inf_01') {
         next = { ...next, firstRanchProblemCompleted: true };
@@ -229,6 +254,9 @@ function reducer(state: GameState, action: GameAction): GameState {
         next = { ...next, eventLog: [ev, ...next.eventLog].slice(0, 20) };
 
         if (choiceIdx === 0) {
+          // Repaired immediately — chain closed
+          const ce = addConsequence(record.instanceId, 'Vedação reparada imediatamente. Sem consequências futuras.', 'info', true);
+          next = { ...next, consequenceChain: [ce, ...next.consequenceChain].slice(0, 50) };
           const withoutNotif = { ...next.notifications };
           delete withoutNotif.cercado_norte;
           next = {
@@ -242,13 +270,24 @@ function reducer(state: GameState, action: GameAction): GameState {
             ),
           };
         } else {
-          // choices 1 (adiar) and 2 (ignorar) schedule a future consequence
-          next = { ...next, pendingFenceConsequence: choiceIdx === 1 ? 'delayed' : 'ignored' };
+          // choices 1 (adiar) and 2 (ignorar) start the chain
+          const severity: ConsequenceEntry['severity'] = choiceIdx === 1 ? 'warning' : 'critical';
+          const text = choiceIdx === 1
+            ? 'Reparação adiada. A vedação continuou a deteriorar-se.'
+            : 'Problema ignorado. A vedação ficou sem reparação.';
+          const ce = addConsequence(record.instanceId, text, severity, false);
+          next = {
+            ...next,
+            pendingFenceConsequence: choiceIdx === 1 ? 'delayed' : 'ignored',
+            consequenceChain: [ce, ...next.consequenceChain].slice(0, 50),
+          };
         }
       }
 
       // Fence deterioration consequence (inf_02)
       if (state.pendingDecision.id === 'inf_02') {
+        // Link to the original inf_01 instance
+        const originId = findOriginId('inf_01');
         const diaryTexts = [
           'Vedação do Cercado Norte reparada. Custo: 2.000€.',
           'Reparação adiada novamente. O risco é agora muito elevado.',
@@ -257,6 +296,12 @@ function reducer(state: GameState, action: GameAction): GameState {
         next = { ...next, eventLog: [ev, ...next.eventLog].slice(0, 20) };
 
         if (choiceIdx === 0) {
+          // Repaired now — chain closes
+          const ce = addConsequence(originId, 'Vedação reparada ao segundo aviso. Custo adicional: 2.000€.', 'warning', true);
+          next = {
+            ...next,
+            consequenceChain: [ce, ...next.consequenceChain].slice(0, 50),
+          };
           const withoutNotif = { ...next.notifications };
           delete withoutNotif.cercado_norte;
           next = {
@@ -270,13 +315,19 @@ function reducer(state: GameState, action: GameAction): GameState {
             ),
           };
         } else {
-          // Escalate to escape scenario
-          next = { ...next, pendingFenceConsequence: 'ignored' };
+          // Escalate — chain continues
+          const ce = addConsequence(originId, 'Segunda reparação adiada. Fuga de animais iminente.', 'critical', false);
+          next = {
+            ...next,
+            pendingFenceConsequence: 'ignored',
+            consequenceChain: [ce, ...next.consequenceChain].slice(0, 50),
+          };
         }
       }
 
       // Animal escape consequence (inf_03)
       if (state.pendingDecision.id === 'inf_03') {
+        const originId = findOriginId('inf_01');
         // Livro da Casa: record the escape event
         const escapeEv: GameEvent = { id: nextId(), month: state.month, year: state.year, text: 'Dois novilhos fugiram do Cercado Norte durante a noite.' };
         const diaryTexts = [
@@ -286,6 +337,15 @@ function reducer(state: GameState, action: GameAction): GameState {
         ];
         const choiceEv: GameEvent = { id: nextId(), month: state.month, year: state.year, text: diaryTexts[choiceIdx] ?? diaryTexts[2] };
         next = { ...next, eventLog: [choiceEv, escapeEv, ...next.eventLog].slice(0, 20) };
+
+        const ceTexts = [
+          'Dois novilhos fugiram. Animais recuperados após busca. Custo: 1.000€.',
+          'Fuga no Cercado Norte. Campinos extra chamados. Custo: 2.500€. Reputação preservada.',
+          'Fuga ignorada. Reputação da casa sofreu -5 de prestígio.',
+        ];
+        const ceSeverity: ConsequenceEntry['severity'][] = ['warning', 'warning', 'critical'];
+        const ce = addConsequence(originId, ceTexts[choiceIdx] ?? ceTexts[2], ceSeverity[choiceIdx] ?? 'critical', true);
+        next = { ...next, consequenceChain: [ce, ...next.consequenceChain].slice(0, 50) };
 
         if (choiceIdx === 0) {
           next = { ...next, economy: { ...next.economy, treasury: next.economy.treasury - 1000 } };
@@ -434,7 +494,7 @@ function reducer(state: GameState, action: GameAction): GameState {
       };
     }
     case 'NEW_GAME':
-      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false, firstDecisionCompleted: false, firstRanchProblemCompleted: false, prestige: 42, pendingFenceConsequence: null, lastSimulationTrace: null };
+      return { ...INITIAL_STATE, openingSequenceCompleted: false, guidedTourCompleted: false, firstDecisionCompleted: false, firstRanchProblemCompleted: false, prestige: 42, pendingFenceConsequence: null, lastSimulationTrace: null, consequenceChain: [] };
     default:
       return state;
   }
@@ -479,6 +539,7 @@ const INITIAL_STATE: GameState = {
   firstContractOffered: false,
   simulatedMonths: 0,
   lastSimulationTrace: null,
+  consequenceChain: [],
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -520,6 +581,7 @@ const STAFF_KEY = 'herdade_staff';
 const WEATHER_KEY = 'herdade_weather';
 const CONTRACTS_KEY = 'herdade_contracts';
 const CONTRACT_FLAGS_KEY = 'herdade_contract_flags';
+const CONSEQUENCE_CHAIN_KEY = 'herdade_consequence_chain';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -575,6 +637,10 @@ function loadSavedState(): Partial<GameState> {
       out.firstContractOffered = flags.firstContractOffered ?? false;
       out.simulatedMonths = flags.simulatedMonths ?? 0;
     }
+  } catch {}
+  try {
+    const raw = localStorage.getItem(CONSEQUENCE_CHAIN_KEY);
+    if (raw) out.consequenceChain = JSON.parse(raw) as ConsequenceEntry[];
   } catch {}
   return out;
 }
@@ -666,6 +732,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
   }, [state.firstContractOffered, state.simulatedMonths]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(CONSEQUENCE_CHAIN_KEY, JSON.stringify(state.consequenceChain));
+    } catch {}
+  }, [state.consequenceChain]);
+
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
@@ -713,6 +785,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try { localStorage.removeItem(CONTRACTS_KEY); } catch {}
     try { localStorage.removeItem(CONTRACT_FLAGS_KEY); } catch {}
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
+    try { localStorage.removeItem(CONSEQUENCE_CHAIN_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };
 

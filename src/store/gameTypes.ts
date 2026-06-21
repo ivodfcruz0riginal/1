@@ -81,6 +81,20 @@ export interface DecisionRecord {
   important?: boolean;
 }
 
+// ── Consequence chain ─────────────────────────────────────────────────────────
+// Each entry records what happened downstream of a specific decision instance.
+// Multiple entries can share the same originInstanceId, forming a chain.
+
+export interface ConsequenceEntry {
+  id: string;                         // unique entry id
+  originDecisionInstanceId: string;   // links back to DecisionRecord.instanceId
+  month: Month;
+  year: number;
+  text: string;                       // human-readable consequence description
+  severity: 'info' | 'warning' | 'critical';
+  resolved: boolean;                  // true once the chain is fully closed
+}
+
 export interface GameState {
   year: number;
   month: Month;
@@ -109,8 +123,9 @@ export interface GameState {
   contracts: BullightContract[];
   pendingContract: ContractOffer | null;
   firstContractOffered: boolean;
-  simulatedMonths: number;      // increments each ADVANCE_MONTH
+  simulatedMonths: number;
   lastSimulationTrace: SimulationTrace | null;
+  consequenceChain: ConsequenceEntry[];  // newest first, max 50
 }
 
 export type GameAction =

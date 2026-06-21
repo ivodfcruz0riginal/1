@@ -2,7 +2,7 @@ import React from 'react';
 import { useGameState } from '../../store/gameState';
 import { formatEuro } from '../../store/economyEngine';
 import { SectionTitle, PaperCard, Pill } from './OfficePrimitives';
-import type { DecisionRecord } from '../../store/gameTypes';
+import type { DecisionRecord, ConsequenceEntry } from '../../store/gameTypes';
 
 const CATEGORY_VARIANT: Record<string, 'gold' | 'amber' | 'sky' | 'green' | 'rose' | 'muted'> = {
   'Saúde Animal': 'rose',
@@ -92,15 +92,101 @@ const LivroTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Important decisions */}
+        {/* Important decisions with consequence chains */}
         {(() => {
           const important = state.decisionHistory.filter((r: DecisionRecord) => r.important);
           if (important.length === 0) return null;
+
+          // Group consequences by decision instance
+          const chainMap: Record<string, ConsequenceEntry[]> = {};
+          for (const entry of (state.consequenceChain ?? [])) {
+            const key = entry.originDecisionInstanceId;
+            if (!chainMap[key]) chainMap[key] = [];
+            chainMap[key].push(entry);
+          }
+          for (const key of Object.keys(chainMap)) {
+            chainMap[key].sort((a, b) => a.year - b.year);
+          }
+
+          // Only show in Livro decisions with actual multi-step consequences
+          const withChain = important.filter(r => (chainMap[r.instanceId]?.length ?? 0) > 1);
+          const withoutChain = important.filter(r => (chainMap[r.instanceId]?.length ?? 0) <= 1);
+
           return (
             <div>
               <SectionTitle>Decisões Importantes</SectionTitle>
-              <div className="space-y-2">
-                {important.map((rec: DecisionRecord) => (
+              <div className="space-y-3">
+                {/* Decisions with consequence chains first */}
+                {withChain.map((rec: DecisionRecord) => {
+                  const chain = chainMap[rec.instanceId] ?? [];
+                  const isResolved = chain.every(e => e.resolved);
+                  return (
+                    <PaperCard key={rec.instanceId}>
+                      <div className="flex items-start gap-3">
+                        <div className="shrink-0 w-16">
+                          <p className="text-gold/60 font-display text-[10px] uppercase tracking-widest leading-none">{rec.month.slice(0, 3)}</p>
+                          <p className="text-ivory/30 text-[10px] font-body mt-0.5">{rec.year}</p>
+                        </div>
+                        <div className="w-px self-stretch bg-leather-600/30 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <p className="font-display text-sm text-ivory/80 tracking-wide">{rec.title}</p>
+                            <Pill label={rec.category} variant={CATEGORY_VARIANT[rec.category] ?? 'muted'} />
+                            <span className={`text-[9px] font-body px-1.5 py-0.5 rounded border ${
+                              isResolved
+                                ? 'bg-emerald-900/25 border-emerald-600/25 text-emerald-400/70'
+                                : 'bg-amber-900/25 border-amber-600/25 text-amber-400/70'
+                            }`}>
+                              {isResolved ? 'Resolvido' : 'Em curso'}
+                            </span>
+                          </div>
+                          <p className="text-ivory/50 text-xs font-body italic leading-snug mb-3">"{rec.choice}"</p>
+
+                          {/* Timeline chain */}
+                          <div className="relative pl-4">
+                            <div className="absolute left-1.5 top-1 bottom-1 w-px bg-gradient-to-b from-leather-500/40 to-transparent" />
+                            <div className="space-y-2">
+                              {/* Root decision as first node */}
+                              <div className="relative flex items-start gap-2.5">
+                                <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-gold/50 border border-gold/30 shrink-0" />
+                                <div className="flex-1 rounded-md border border-gold/15 bg-gold/5 px-2.5 py-1.5">
+                                  <p className="text-[9px] font-body text-gold/50 uppercase tracking-widest mb-0.5">{rec.month.slice(0, 3)} {rec.year} · Decisão</p>
+                                  <p className="text-ivory/60 text-[11px] font-body leading-snug">{rec.result ?? rec.choice}</p>
+                                </div>
+                              </div>
+                              {/* Consequence entries */}
+                              {chain.map((entry) => {
+                                const dot =
+                                  entry.severity === 'critical' ? 'bg-red-500/70' :
+                                  entry.severity === 'warning' ? 'bg-amber-500/60' : 'bg-sky-500/50';
+                                const border =
+                                  entry.severity === 'critical' ? 'border-red-500/25 bg-red-900/10' :
+                                  entry.severity === 'warning' ? 'border-amber-500/20 bg-amber-900/10' : 'border-sky-500/15 bg-leather-800/20';
+                                const textColor =
+                                  entry.severity === 'critical' ? 'text-red-300/80' :
+                                  entry.severity === 'warning' ? 'text-amber-300/80' : 'text-ivory/60';
+                                return (
+                                  <div key={entry.id} className="relative flex items-start gap-2.5">
+                                    <div className={`absolute -left-4 top-1.5 w-2 h-2 rounded-full border border-leather-600/30 ${dot} shrink-0`} />
+                                    <div className={`flex-1 rounded-md border px-2.5 py-1.5 ${border}`}>
+                                      <p className="text-[9px] font-body text-gold/40 uppercase tracking-widest mb-0.5">
+                                        {entry.month.slice(0, 3)} {entry.year}
+                                        {entry.resolved && ' · ✓'}
+                                      </p>
+                                      <p className={`text-[11px] font-body leading-snug ${textColor}`}>{entry.text}</p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </PaperCard>
+                  );
+                })}
+                {/* Decisions without multi-step chains */}
+                {withoutChain.map((rec: DecisionRecord) => (
                   <PaperCard key={rec.instanceId}>
                     <div className="flex items-start gap-3">
                       <div className="shrink-0 w-16">
