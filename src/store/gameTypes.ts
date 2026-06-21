@@ -1,4 +1,5 @@
 import type { Animal } from '../types/animal';
+import type { StaffMember } from '../types/staff';
 import type { DialogueTemplate } from '../data/maioralDialogues';
 import type { DailyTask } from '../data/dailyTasks';
 import type { Decision, DecisionCategory } from '../data/decisions';
@@ -43,6 +44,7 @@ export interface DialogueRecord {
 }
 
 export type { DailyTask };
+export type { StaffMember };
 export type { Decision, DecisionCategory };
 export type { Location, LocationId, LocationCondition, LocationNotification };
 
@@ -65,6 +67,7 @@ export interface GameState {
   eventLog: GameEvent[];
   economy: EconomyState;
   animals: Animal[];
+  staff: StaffMember[];
   notifications: Partial<Record<BuildingKey, BuildingNotification>>;
   pendingDialogue: DialogueTemplate | null;
   dialogueHistory: DialogueRecord[];

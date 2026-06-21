@@ -4,6 +4,7 @@ import {
   type EconomyState,
 } from './economyEngine';
 import { animals as initialAnimals } from '../data/animals';
+import { INITIAL_STAFF } from '../data/staff';
 import { GREETING_DIALOGUE } from '../data/maioralDialogues';
 import type { DialogueTemplate } from '../data/maioralDialogues';
 import { generateDailyTasks } from '../data/dailyTasks';
@@ -37,6 +38,7 @@ export type {
   LocationId,
   LocationCondition,
   LocationNotification,
+  StaffMember,
   GameState,
   GameAction,
 } from './gameTypes';
@@ -323,6 +325,7 @@ const INITIAL_STATE: GameState = {
   ],
   economy: INITIAL_ECONOMY,
   animals: initialAnimals,
+  staff: INITIAL_STAFF,
   notifications: {},
   pendingDialogue: GREETING_DIALOGUE,
   dialogueHistory: [],
@@ -375,6 +378,7 @@ const PRESTIGE_KEY = 'herdade_prestige';
 const FENCE_CONSEQUENCE_KEY = 'herdade_fence_consequence';
 const ANIMALS_KEY = 'herdade_animals';
 const LOCATIONS_KEY = 'herdade_locations';
+const STAFF_KEY = 'herdade_staff';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -410,6 +414,10 @@ function loadSavedState(): Partial<GameState> {
   try {
     const raw = localStorage.getItem(LOCATIONS_KEY);
     if (raw) out.locations = JSON.parse(raw);
+  } catch {}
+  try {
+    const raw = localStorage.getItem(STAFF_KEY);
+    if (raw) out.staff = JSON.parse(raw);
   } catch {}
   return out;
 }
@@ -474,6 +482,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
   }, [state.locations]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(STAFF_KEY, JSON.stringify(state.staff));
+    } catch {}
+  }, [state.staff]);
+
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
@@ -514,6 +528,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try { localStorage.removeItem(FENCE_CONSEQUENCE_KEY); } catch {}
     try { localStorage.removeItem(ANIMALS_KEY); } catch {}
     try { localStorage.removeItem(LOCATIONS_KEY); } catch {}
+    try { localStorage.removeItem(STAFF_KEY); } catch {}
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };

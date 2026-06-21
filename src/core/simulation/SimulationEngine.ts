@@ -18,6 +18,7 @@ import {
 import { applyMonthToEconomy } from '../../store/economyEngine';
 import { updateAnimals, type AnimalDiaryEvent } from './AnimalSimulationService';
 import { updateLocations, type LocationDiaryEvent } from './LocationSimulationService';
+import { updateStaff, type StaffDiaryEvent } from './StaffSimulationService';
 import { pickMonthlyDialogue } from '../../data/maioralDialogues';
 import {
   FENCE_CONSEQUENCE_DELAYED,
@@ -184,6 +185,33 @@ function phase6_resolvePendingConsequences(state: GameState): {
   return { pendingDecision: randomDecision, nextFenceConsequence: null };
 }
 
+// ── Phase 9: Update Staff ─────────────────────────────────────────────────────
+//
+// Delegates to StaffSimulationService: updates experience, fatigue, mood,
+// loyalty, health for each staff member. Generates Maioral observation and
+// optional campino work report as diary events.
+
+function phase9_updateStaff(
+  climate: ClimateCtx,
+  state: GameState,
+  updatedLocations: Location[],
+  economyProfit: number,
+): { staff: GameState['staff']; staffEvents: StaffDiaryEvent[] } {
+  const norte = updatedLocations.find(l => l.id === 'cercado_norte');
+  const sul = updatedLocations.find(l => l.id === 'cercado_sul');
+
+  const { staff, diaryEvents } = updateStaff(state.staff, {
+    season: climate.season,
+    economyProfit,
+    northCondition: norte?.condition ?? 'Good',
+    southCondition: sul?.condition ?? 'Good',
+    hasBrokenFence: (norte?.notifications ?? []).includes('BrokenFence'),
+    treasury: state.economy.treasury,
+  });
+
+  return { staff, staffEvents: diaryEvents };
+}
+
 // ── Phase 7: Generate New Events ──────────────────────────────────────────────
 //
 // All events derive from the current world state — no arbitrary pool picks.
@@ -203,6 +231,7 @@ function phase7_generateEvents(
   animalEvents: AnimalDiaryEvent[],
   economicEvent: GameEvent | null,
   locationEvents: LocationDiaryEvent[],
+  staffEvents: StaffDiaryEvent[],
 ): GameEvent[] {
   const events: GameEvent[] = [];
 
@@ -239,8 +268,13 @@ function phase7_generateEvents(
     });
   }
 
-  // Cap at 5 events to keep the log readable
-  return events.slice(0, 5);
+  // 6. Staff observations (max 2, appended after world events)
+  for (const ev of staffEvents) {
+    events.push({ id: nextId(), month: climate.month, year: climate.year, text: ev.text });
+  }
+
+  // Cap at 7 events (5 world + 2 staff)
+  return events.slice(0, 7);
 }
 
 // ── Phase 8: Generate Monthly Report ─────────────────────────────────────────
@@ -324,6 +358,10 @@ export function simulateMonth(state: GameState): SimulationOutput {
   // Phase 6: Resolve Pending Consequences
   const { pendingDecision, nextFenceConsequence } = phase6_resolvePendingConsequences(state);
 
+  // Phase 9: Update Staff
+  const thisMonthProfit = economy.history[0]?.profit ?? 0;
+  const { staff, staffEvents } = phase9_updateStaff(climate, state, locations, thisMonthProfit);
+
   // Phase 7: Generate New Events
   const newEvents = phase7_generateEvents(
     climate,
@@ -331,6 +369,7 @@ export function simulateMonth(state: GameState): SimulationOutput {
     animalEvents,
     economicEvent,
     locationEvents,
+    staffEvents,
   );
 
   // Notifications update
@@ -361,6 +400,7 @@ export function simulateMonth(state: GameState): SimulationOutput {
     eventLog,
     economy,
     animals,
+    staff,
     notifications,
     pendingDialogue,
     dailyTasks: generateDailyTasks(),
