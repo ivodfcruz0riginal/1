@@ -20,6 +20,7 @@ import { GoalProvider, useGoals } from './store/goalStore';
 import { computeGoalProgress } from './services/goalService';
 import { useDayCycle } from './hooks/useDayCycle';
 import WelcomeSequence from './components/WelcomeSequence';
+import DirectorCard from './components/DirectorCard';
 
 // ── Consequence processor — activates triggered consequences on month change ──
 
@@ -84,6 +85,7 @@ const HerdadePage: React.FC = () => {
 
       <RanchMap />
       <TasksPanel />
+      <DirectorCard />
       <LocationDetailPanel />
       <MaioralDialogue />
     </>
