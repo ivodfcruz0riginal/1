@@ -49,6 +49,62 @@
   }
 }
 
+/* ── Ambient atmosphere animations ─────────────────────────────────────────── */
+
+@keyframes ambient-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-140vw); }
+}
+
+@keyframes ambient-bird {
+  0%   { transform: translateX(0) translateY(0); opacity: 0; }
+  3%   { opacity: 0.6; }
+  97%  { opacity: 0.45; }
+  100% { transform: translateX(-140vw) translateY(-10px); opacity: 0; }
+}
+
+@keyframes ambient-smoke {
+  0%   { transform: translateY(0) translateX(0) scale(0.5); opacity: 0.5; }
+  100% { transform: translateY(-48px) translateX(7px) scale(3.2); opacity: 0; }
+}
+
+@keyframes ambient-rain {
+  from { transform: translateY(-30px) skewX(-8deg); }
+  to   { transform: translateY(110vh) skewX(-8deg); }
+}
+
+@keyframes ambient-mist {
+  0%, 100% { opacity: 0.1; transform: translateX(0); }
+  50%       { opacity: 0.2; transform: translateX(18px); }
+}
+
+@keyframes ambient-bull-graze {
+  0%, 100% { transform: translateX(0); }
+  35%       { transform: translateX(16px); }
+  70%       { transform: translateX(-5px); }
+}
+
+@keyframes ambient-tree-sway {
+  0%, 100% { transform: rotate(-2deg); transform-origin: bottom center; }
+  50%       { transform: rotate(2.5deg); transform-origin: bottom center; }
+}
+
+@keyframes ambient-grass-wave {
+  0%, 100% { transform: skewX(-2deg); }
+  50%       { transform: skewX(2deg); }
+}
+
+.ambient-cloud-slow  { animation: ambient-drift 95s linear infinite; }
+.ambient-cloud-mid   { animation: ambient-drift 72s linear infinite; }
+.ambient-cloud-fast  { animation: ambient-drift 54s linear infinite; }
+.ambient-bird        { animation: ambient-bird 28s ease-in-out infinite; }
+.ambient-smoke       { animation: ambient-smoke 3.6s ease-out infinite; }
+.ambient-rain-drop   { animation: ambient-rain 0.65s linear infinite; }
+.ambient-mist        { animation: ambient-mist 9s ease-in-out infinite; }
+.ambient-bull        { animation: ambient-bull-graze 14s ease-in-out infinite; }
+.ambient-tree        { animation: ambient-tree-sway 3.2s ease-in-out infinite; }
+.ambient-grass       { animation: ambient-grass-wave 2.8s ease-in-out infinite; }
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
