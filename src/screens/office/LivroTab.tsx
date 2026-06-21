@@ -1,6 +1,15 @@
 import React from 'react';
 import { useGameState } from '../../store/gameState';
-import { SectionTitle, PaperCard } from './OfficePrimitives';
+import { SectionTitle, PaperCard, Pill } from './OfficePrimitives';
+import type { DecisionRecord } from '../../store/gameTypes';
+
+const CATEGORY_VARIANT: Record<string, 'gold' | 'amber' | 'sky' | 'green' | 'rose' | 'muted'> = {
+  'Saúde Animal': 'rose',
+  'Contrato': 'sky',
+  'Gestão': 'amber',
+  'Evento': 'gold',
+  'Pessoal': 'green',
+};
 
 const MILESTONES = [
   { year: 1947, text: 'Fundação da Herdade da Ferraria por D. João Nobre da Costa.' },
@@ -81,6 +90,40 @@ const LivroTab: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Important decisions */}
+        {(() => {
+          const important = state.decisionHistory.filter((r: DecisionRecord) => r.important);
+          if (important.length === 0) return null;
+          return (
+            <div>
+              <SectionTitle>Decisões Importantes</SectionTitle>
+              <div className="space-y-2">
+                {important.map((rec: DecisionRecord) => (
+                  <PaperCard key={rec.instanceId}>
+                    <div className="flex items-start gap-3">
+                      <div className="shrink-0 w-16">
+                        <p className="text-gold/60 font-display text-[10px] uppercase tracking-widest leading-none">{rec.month.slice(0, 3)}</p>
+                        <p className="text-ivory/30 text-[10px] font-body mt-0.5">{rec.year}</p>
+                      </div>
+                      <div className="w-px self-stretch bg-leather-600/30 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <p className="font-display text-sm text-ivory/80 tracking-wide">{rec.title}</p>
+                          <Pill label={rec.category} variant={CATEGORY_VARIANT[rec.category] ?? 'muted'} />
+                        </div>
+                        <p className="text-ivory/50 text-xs font-body italic leading-snug">"{rec.choice}"</p>
+                        {rec.result && (
+                          <p className="text-ivory/35 text-[11px] font-body mt-1 leading-snug">{rec.result}</p>
+                        )}
+                      </div>
+                    </div>
+                  </PaperCard>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

@@ -55,6 +55,7 @@ export interface DecisionRecord {
   month: Month;
   year: number;
   result: string | null;
+  important?: boolean;
 }
 
 export interface GameState {

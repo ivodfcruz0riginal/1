@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import {
   INITIAL_ECONOMY,
   applyMonthToEconomy,
@@ -220,6 +220,8 @@ function reducer(state: GameState, action: GameAction): GameState {
     }
     case 'RESOLVE_DECISION': {
       if (!state.pendingDecision) return state;
+      const choiceIdx = state.pendingDecision.choices.indexOf(action.choice);
+      const result = state.pendingDecision.consequences?.[choiceIdx] ?? null;
       const record: DecisionRecord = {
         instanceId: nextDecisionInstanceId(),
         decisionId: state.pendingDecision.id,
@@ -228,7 +230,8 @@ function reducer(state: GameState, action: GameAction): GameState {
         choice: action.choice,
         month: state.month,
         year: state.year,
-        result: null,
+        result,
+        important: state.pendingDecision.important,
       };
       return {
         ...state,
@@ -309,8 +312,27 @@ interface GameStateContextValue {
 
 const GameStateContext = createContext<GameStateContextValue | null>(null);
 
+const DECISIONS_STORAGE_KEY = 'herdade_decisions';
+
+function loadDecisionHistory(): DecisionRecord[] {
+  try {
+    const raw = localStorage.getItem(DECISIONS_STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as DecisionRecord[];
+  } catch {}
+  return [];
+}
+
 export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
+  const [state, dispatch] = useReducer(reducer, INITIAL_STATE, (init) => {
+    const saved = loadDecisionHistory();
+    return saved.length > 0 ? { ...init, decisionHistory: saved } : init;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DECISIONS_STORAGE_KEY, JSON.stringify(state.decisionHistory));
+    } catch {}
+  }, [state.decisionHistory]);
 
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
