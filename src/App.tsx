@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import DecisionWindow from './components/DecisionWindow';
+import ContractOfferModal from './components/ContractOfferModal';
 import OpeningSequence from './components/OpeningSequence';
 import HerdadeScreen from './screens/HerdadeScreen';
 import PlaceholderPage from './pages/PlaceholderPage';
@@ -132,6 +133,7 @@ const GameRoot: React.FC = () => {
     <>
       <Layout flowStep={flowStep} onTourComplete={handleTourComplete} />
       {showDecisionWindow && <DecisionWindow />}
+      {flowStep === 'NORMAL_GAME' && <ContractOfferModal />}
       {flowStep === 'OPENING' && <OpeningSequence onComplete={handleOpeningComplete} />}
     </>
   );

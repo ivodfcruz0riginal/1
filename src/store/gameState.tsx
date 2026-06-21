@@ -19,6 +19,8 @@ import {
 } from '../services/locationService';
 import { simulateMonth } from '../core/simulation/SimulationEngine';
 import type { WeatherState } from '../types/weather';
+import type { BullightContract, ContractOffer } from '../types/contract';
+import { FIRST_CONTRACT_OFFER, nextContractInstanceId } from '../data/contracts';
 
 const INITIAL_WEATHER: WeatherState = {
   type: 'cloudy',
@@ -54,6 +56,8 @@ export type {
   LocationNotification,
   StaffMember,
   WeatherState,
+  BullightContract,
+  ContractOffer,
   GameState,
   GameAction,
 } from './gameTypes';
@@ -73,6 +77,8 @@ import type {
   LocationCondition,
   LocationNotification,
   Decision,
+  BullightContract,
+  ContractOffer,
 } from './gameTypes';
 
 // ── Re-export constants ───────────────────────────────────────────────────────
@@ -117,7 +123,32 @@ function nextId(): string {
 }
 
 function advanceMonthState(state: GameState): GameState {
-  return simulateMonth(state).state;
+  const next = simulateMonth(state).state;
+  const newSimMonths = (state.simulatedMonths ?? 0) + 1;
+
+  // Check first contract trigger: after 2 months, onboarding done, prestige > 0, >= 2 suitable bulls, not yet offered
+  const shouldOfferFirstContract =
+    !next.firstContractOffered &&
+    next.openingSequenceCompleted &&
+    newSimMonths >= 2 &&
+    next.prestige > 0 &&
+    next.animals.filter(
+      a =>
+        a.sex === 'Macho' &&
+        a.status === 'Ativo' &&
+        (a.category === 'Macho de Corrida' || a.category === 'Novilho' || a.category === 'Semental' || a.category === 'Utrero'),
+    ).length >= 2;
+
+  const pendingContract = shouldOfferFirstContract
+    ? { ...FIRST_CONTRACT_OFFER, performanceYear: next.year }
+    : next.pendingContract;
+
+  return {
+    ...next,
+    simulatedMonths: newSimMonths,
+    pendingContract,
+    firstContractOffered: next.firstContractOffered || shouldOfferFirstContract,
+  };
 }
 
 function reducer(state: GameState, action: GameAction): GameState {
@@ -300,6 +331,89 @@ function reducer(state: GameState, action: GameAction): GameState {
       const ev: GameEvent = { id: nextId(), month: state.month, year: state.year, text: action.text };
       return { ...state, eventLog: [ev, ...state.eventLog].slice(0, 20) };
     }
+    case 'RESPOND_CONTRACT': {
+      if (!state.pendingContract) return state;
+      const offer: ContractOffer = state.pendingContract;
+
+      // Find 2 suitable active bulls not already reserved
+      const reservedIds = new Set(
+        state.contracts.flatMap(c => c.reservedAnimalIds),
+      );
+      const suitableBulls = state.animals.filter(
+        a =>
+          a.sex === 'Macho' &&
+          a.status === 'Ativo' &&
+          !reservedIds.has(a.id) &&
+          (a.category === 'Macho de Corrida' || a.category === 'Novilho' || a.category === 'Semental' || a.category === 'Utrero'),
+      );
+      const chosen = suitableBulls.slice(0, offer.bullsRequired);
+
+      if (action.choice === 'decline') {
+        const ev: GameEvent = {
+          id: nextId(), month: state.month, year: state.year,
+          text: `Proposta da Praça de ${offer.city} recusada. Oportunidade perdida.`,
+        };
+        return {
+          ...state,
+          pendingContract: null,
+          prestige: Math.max(0, state.prestige - 1),
+          eventLog: [ev, ...state.eventLog].slice(0, 20),
+        };
+      }
+
+      // negotiate: 50% chance of +20% payment
+      let finalPayment = offer.basePayment;
+      let negotiateText = '';
+      if (action.choice === 'negotiate') {
+        if (Math.random() < 0.5) {
+          finalPayment = Math.round(offer.basePayment * 1.2);
+          negotiateText = ` Negociação bem-sucedida: valor aumentado para ${finalPayment.toLocaleString('pt-PT')}€.`;
+        } else {
+          negotiateText = ' Negociação sem resultado. Contrato ao valor original.';
+        }
+      }
+
+      const instanceId = nextContractInstanceId();
+      const contract: BullightContract = {
+        id: offer.contractId,
+        instanceId,
+        placeId: offer.city.toLowerCase(),
+        placeName: offer.placeName,
+        city: offer.city,
+        performanceMonth: offer.performanceMonth,
+        performanceYear: offer.performanceYear,
+        bullsRequired: offer.bullsRequired,
+        basePayment: offer.basePayment,
+        negotiatedPayment: finalPayment,
+        reservedAnimalIds: chosen.map(a => a.id),
+        status: 'Aceite',
+        offeredMonth: state.month,
+        offeredYear: state.year,
+        acceptedMonth: state.month,
+        acceptedYear: state.year,
+        letterText: offer.letterText,
+        isFirstContract: offer.isFirstContract,
+      };
+
+      const diaryText = offer.isFirstContract
+        ? `Primeiro contrato aceite: ${offer.bullsRequired} toiros para a ${offer.placeName} em ${offer.performanceMonth}.${negotiateText}`
+        : `Contrato aceite: ${offer.bullsRequired} toiros para a ${offer.placeName} em ${offer.performanceMonth}.${negotiateText}`;
+
+      const ev: GameEvent = {
+        id: nextId(), month: state.month, year: state.year,
+        text: diaryText,
+      };
+
+      // Notify economy: add expected payment to treasury as advance
+      const advance = Math.round(finalPayment * 0.3);
+      return {
+        ...state,
+        pendingContract: null,
+        contracts: [contract, ...state.contracts],
+        economy: { ...state.economy, treasury: state.economy.treasury + advance },
+        eventLog: [ev, ...state.eventLog].slice(0, 20),
+      };
+    }
     case 'COMPLETE_INTRO':
       return { ...state, openingSequenceCompleted: true };
     case 'COMPLETE_TOUR':
@@ -358,6 +472,10 @@ const INITIAL_STATE: GameState = {
   prestige: 42,
   pendingFenceConsequence: null,
   weather: INITIAL_WEATHER,
+  contracts: [],
+  pendingContract: null,
+  firstContractOffered: false,
+  simulatedMonths: 0,
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -380,6 +498,7 @@ interface GameStateContextValue {
   completeIntro: () => void;
   completeTour: () => void;
   triggerRanchProblem: () => void;
+  respondContract: (choice: 'accept' | 'negotiate' | 'decline') => void;
   startNewGame: () => void;
 }
 
@@ -396,6 +515,8 @@ const ANIMALS_KEY = 'herdade_animals';
 const LOCATIONS_KEY = 'herdade_locations';
 const STAFF_KEY = 'herdade_staff';
 const WEATHER_KEY = 'herdade_weather';
+const CONTRACTS_KEY = 'herdade_contracts';
+const CONTRACT_FLAGS_KEY = 'herdade_contract_flags';
 
 function loadSavedState(): Partial<GameState> {
   const out: Partial<GameState> = {};
@@ -439,6 +560,18 @@ function loadSavedState(): Partial<GameState> {
   try {
     const raw = localStorage.getItem(WEATHER_KEY);
     if (raw) out.weather = JSON.parse(raw) as WeatherState;
+  } catch {}
+  try {
+    const raw = localStorage.getItem(CONTRACTS_KEY);
+    if (raw) out.contracts = JSON.parse(raw) as BullightContract[];
+  } catch {}
+  try {
+    const raw = localStorage.getItem(CONTRACT_FLAGS_KEY);
+    if (raw) {
+      const flags = JSON.parse(raw) as { firstContractOffered: boolean; simulatedMonths: number };
+      out.firstContractOffered = flags.firstContractOffered ?? false;
+      out.simulatedMonths = flags.simulatedMonths ?? 0;
+    }
   } catch {}
   return out;
 }
@@ -515,6 +648,21 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
   }, [state.weather]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(CONTRACTS_KEY, JSON.stringify(state.contracts));
+    } catch {}
+  }, [state.contracts]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CONTRACT_FLAGS_KEY, JSON.stringify({
+        firstContractOffered: state.firstContractOffered,
+        simulatedMonths: state.simulatedMonths,
+      }));
+    } catch {}
+  }, [state.firstContractOffered, state.simulatedMonths]);
+
   const advance = () => dispatch({ type: 'ADVANCE_MONTH' });
   const dismissNotification = (building: BuildingKey) =>
     dispatch({ type: 'DISMISS_NOTIFICATION', building });
@@ -546,6 +694,8 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     dispatch({ type: 'COMPLETE_TOUR' });
   const triggerRanchProblem = () =>
     dispatch({ type: 'TRIGGER_RANCH_PROBLEM' });
+  const respondContract = (choice: 'accept' | 'negotiate' | 'decline') =>
+    dispatch({ type: 'RESPOND_CONTRACT', choice });
   const startNewGame = () => {
     try { localStorage.removeItem(OPENING_DONE_KEY); } catch {}
     try { localStorage.removeItem(TOUR_DONE_KEY); } catch {}
@@ -557,6 +707,8 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try { localStorage.removeItem(LOCATIONS_KEY); } catch {}
     try { localStorage.removeItem(STAFF_KEY); } catch {}
     try { localStorage.removeItem(WEATHER_KEY); } catch {}
+    try { localStorage.removeItem(CONTRACTS_KEY); } catch {}
+    try { localStorage.removeItem(CONTRACT_FLAGS_KEY); } catch {}
     try { localStorage.removeItem(DECISIONS_STORAGE_KEY); } catch {}
     dispatch({ type: 'NEW_GAME' });
   };
@@ -567,7 +719,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       completeTask, ignoreTask, resolveDecision,
       setActiveLocation, updateLocationCondition, addLocationNotification,
       clearLocationNotification, updateLocationOccupation, setPhase, addGameEvent,
-      completeIntro, completeTour, triggerRanchProblem, startNewGame,
+      completeIntro, completeTour, triggerRanchProblem, respondContract, startNewGame,
     }}>
       {children}
     </GameStateContext.Provider>

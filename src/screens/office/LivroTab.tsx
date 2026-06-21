@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGameState } from '../../store/gameState';
+import { formatEuro } from '../../store/economyEngine';
 import { SectionTitle, PaperCard, Pill } from './OfficePrimitives';
 import type { DecisionRecord } from '../../store/gameTypes';
 
@@ -120,6 +121,34 @@ const LivroTab: React.FC = () => {
                     </div>
                   </PaperCard>
                 ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Accepted contracts */}
+        {(() => {
+          const accepted = (state.contracts ?? []).filter(c => c.status === 'Aceite' || c.status === 'Concluído');
+          if (accepted.length === 0) return null;
+          return (
+            <div>
+              <SectionTitle>Contratos da Casa</SectionTitle>
+              <div className="relative pl-5">
+                <div className="absolute left-0 top-2 bottom-2 w-px bg-gradient-to-b from-sky-500/30 via-leather-600/30 to-transparent" />
+                <div className="space-y-3">
+                  {accepted.map(c => (
+                    <div key={c.instanceId} className="relative">
+                      <div className="absolute -left-5 top-1.5 w-2 h-2 rounded-full border border-sky-400/40 bg-leather-900" />
+                      <p className="text-sky-400/60 font-display text-[10px] uppercase tracking-widest mb-0.5">
+                        {c.offeredMonth} {c.offeredYear}
+                      </p>
+                      <p className="text-ivory/65 text-xs font-body leading-relaxed">
+                        {c.isFirstContract ? 'Primeiro contrato da nova administração. ' : ''}
+                        Contrato com a {c.placeName} para {c.performanceMonth} {c.performanceYear}. {formatEuro(c.negotiatedPayment)}.
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           );

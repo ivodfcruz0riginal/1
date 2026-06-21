@@ -6,6 +6,7 @@ import type { Decision, DecisionCategory } from '../data/decisions';
 import type { Location, LocationId, LocationCondition, LocationNotification } from '../types/location';
 import type { EconomyState } from './economyEngine';
 import type { WeatherState } from '../types/weather';
+import type { BullightContract, ContractOffer } from '../types/contract';
 
 export type GamePhase =
   | 'MonthStart'
@@ -49,6 +50,7 @@ export type { StaffMember };
 export type { Decision, DecisionCategory };
 export type { Location, LocationId, LocationCondition, LocationNotification };
 export type { WeatherState };
+export type { BullightContract, ContractOffer };
 
 export interface DecisionRecord {
   instanceId: string;
@@ -87,6 +89,10 @@ export interface GameState {
   prestige: number;
   pendingFenceConsequence: 'delayed' | 'ignored' | null;
   weather: WeatherState;
+  contracts: BullightContract[];
+  pendingContract: ContractOffer | null;
+  firstContractOffered: boolean;
+  simulatedMonths: number;      // increments each ADVANCE_MONTH
 }
 
 export type GameAction =
@@ -106,4 +112,5 @@ export type GameAction =
   | { type: 'COMPLETE_INTRO' }
   | { type: 'COMPLETE_TOUR' }
   | { type: 'TRIGGER_RANCH_PROBLEM' }
+  | { type: 'RESPOND_CONTRACT'; choice: 'accept' | 'negotiate' | 'decline' }
   | { type: 'NEW_GAME' };
