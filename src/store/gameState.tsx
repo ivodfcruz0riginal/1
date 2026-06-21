@@ -23,6 +23,8 @@ import {
 } from '../services/locationService';
 import type { MonthlyReport } from '../core/reports/MonthlyReport';
 import { monthlyReportService } from '../core/reports/MonthlyReportService';
+import type { AnimalLifeState } from '../core/life/AnimalLife';
+import { animalLifeService } from '../core/life/AnimalLifeService';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -97,6 +99,7 @@ export interface GameState {
   phase: GamePhase;
   hasOpenedBuildingThisMonth: boolean;
   monthlyReports: MonthlyReport[];
+  animalLifeStates: Record<string, AnimalLifeState>;
 }
 
 type GameAction =
@@ -255,6 +258,14 @@ function advanceMonthState(state: GameState): GameState {
   const newReport = monthlyReportService.generateMonthlyReport({ ...state, month: nextMonth, year: nextYear, season: nextSeason });
   const newReports = [newReport, ...state.monthlyReports].slice(0, 24);
 
+  const updatedLifeStates = animalLifeService.updateAllLifeStates(
+    state.animalLifeStates,
+    newAnimals,
+    nextMonth,
+    nextYear,
+    nextSeason,
+  );
+
   return {
     year: nextYear,
     month: nextMonth,
@@ -274,6 +285,7 @@ function advanceMonthState(state: GameState): GameState {
     phase: computePhase(nextDialogue, nextDecision, false),
     hasOpenedBuildingThisMonth: false,
     monthlyReports: newReports,
+    animalLifeStates: updatedLifeStates,
   };
 }
 
@@ -415,6 +427,7 @@ const INITIAL_STATE: GameState = {
   phase: 'MonthStart',
   hasOpenedBuildingThisMonth: false,
   monthlyReports: [],
+  animalLifeStates: animalLifeService.initializeLifeStates(initialAnimals),
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────

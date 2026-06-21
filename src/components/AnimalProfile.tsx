@@ -5,6 +5,8 @@ import AnimalPersonality from './AnimalPersonality';
 import AnimalCondition from './AnimalCondition';
 import AnimalObservations from './AnimalObservations';
 import AnimalTimeline from './AnimalTimeline';
+import AnimalLifePanel from './AnimalLifePanel';
+import AnimalMonthlyNotes from './AnimalMonthlyNotes';
 
 // ── Visual mappings ───────────────────────────────────────────────────────────
 
@@ -256,6 +258,9 @@ const AnimalProfile: React.FC<AnimalProfileProps> = ({ animal, allAnimals, onClo
             <AnimalPersonality animal={animal} />
           </div>
 
+          {/* Estado Actual — live life state */}
+          <AnimalLifePanel animalId={animal.id} />
+
           {/* Second 2-column grid: Condition + Observations */}
           <div className="grid grid-cols-2 gap-8">
             <AnimalCondition animal={animal} />
@@ -289,6 +294,9 @@ const AnimalProfile: React.FC<AnimalProfileProps> = ({ animal, allAnimals, onClo
 
           {/* Timeline */}
           <AnimalTimeline animal={animal} />
+
+          {/* Monthly notes history */}
+          <AnimalMonthlyNotes animalId={animal.id} />
 
           {/* Relationships */}
           <div>
